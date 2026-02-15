@@ -1,0 +1,179 @@
+{
+  "$schema": "quest-console-v3",
+  "description": "Full quest JSON schema for Quest Console v3. Includes appearance (skinning), handler (briefing cinematic), and transition data.",
+
+  "handler": {
+    "description": "Controls the Handler Briefing cinematic that plays between Summon and Reveal.",
+    "shape": {
+      "name": "string — speaker label shown above dialogue (default: 'The Handler')",
+      "lines": "string[] — dialogue lines played sequentially via typewriter. Supports \\n for line breaks within a single frame.",
+      "audio_url": "string — optional URL to audio file that plays during the entire briefing. WAV/MP3/OGG.",
+      "type_speed": "number — milliseconds per character (default 35). Lower = faster.",
+      "auto_advance": "boolean — if true, lines advance automatically after typing. If false, user taps Continue (default false).",
+      "auto_advance_delay": "number — ms pause between auto-advance lines (default 1400)"
+    },
+    "notes": [
+      "The Handler figure is an SVG silhouette that inherits --accent color from the active skin.",
+      "Eyes glow with the accent color. Breathing and glitch animations are automatic.",
+      "After all lines play, a wipe transition sweeps to the quest reveal panel.",
+      "Users can Skip (jumps directly to reveal) or tap Continue to advance manually.",
+      "Spacebar and Enter also advance lines during briefing.",
+      "If audio_url is provided, an audio indicator (5-bar EQ) shows in the top-right corner."
+    ]
+  },
+
+  "appearance": {
+    "description": "Controls visual theming. Applied on quest accept and re-evaluated on task completion for transitions.",
+    "shape": {
+      "skin": "string — base skin id: sci | parch | cozy | map | void | feral",
+      "label": "string — display name shown in story indicator bar",
+      "overrides": {
+        "--accent": "Primary accent (hex/rgba). Headings, borders, glows, Handler eyes.",
+        "--accent2": "Secondary accent. Artifact rows, badges.",
+        "--bg0": "Deepest background.",
+        "--bg1": "Lighter background layer.",
+        "--glow1": "Primary radial glow (rgba, low alpha).",
+        "--glow2": "Secondary radial glow.",
+        "--glow-accent": "Intense glow for text-shadow / box-shadow / Handler figure drop-shadow.",
+        "--stroke": "Panel/card border color.",
+        "--glass": "Glass panel bg (very low alpha).",
+        "--glass2": "Slightly more opaque glass.",
+        "--text": "Primary text color.",
+        "--muted": "Secondary text.",
+        "--muted2": "Tertiary / hint text.",
+        "--good": "Success color.",
+        "--warn": "Warning color.",
+        "--danger": "Danger color.",
+        "--border-style": "solid | dashed | dotted | double",
+        "--border-glow": "CSS box-shadow for borders.",
+        "--accent-glow": "CSS text-shadow for headings.",
+        "--card-shadow": "CSS box-shadow for panels."
+      },
+      "atmosphere": {
+        "grain": "number 0-0.15 — film grain opacity",
+        "scanlines": "number 0-0.12 — scan-line texture opacity",
+        "vignette": "number 0-0.8 — edge darkening",
+        "blur": "number 6-20 — panel backdrop blur px"
+      },
+      "fonts": {
+        "heading": "CSS font-family — section headers, labels, Handler speaker label",
+        "display": "CSS font-family — quest titles, brand mark",
+        "body": "CSS font-family — body text",
+        "mono": "CSS font-family — stats, data, Handler dialogue text"
+      },
+      "transitions": {
+        "[phase_name]": {
+          "trigger": "primary_25 | primary_50 | primary_75 | primary_100 | side_50 | side_100 | xp_500 | xp_1000 | manual",
+          "skin": "optional — base skin to shift to",
+          "overrides": "object — CSS var overrides merged on top of base",
+          "label": "string — indicator text during this phase"
+        }
+      }
+    }
+  },
+
+  "examples": [
+    {
+      "name": "Spy Heist with Dramatic Handler",
+      "handler": {
+        "name": "Control",
+        "lines": [
+          "Listen carefully. We don't have much time.",
+          "A rogue signal is pulsing from the sector. Encrypted. Unstable.",
+          "You will locate the terminal. Extract the data. Three files, minimum.",
+          "If you see drones — change your route. This channel goes dark in thirty seconds."
+        ],
+        "audio_url": "",
+        "type_speed": 28,
+        "auto_advance": false,
+        "auto_advance_delay": 1400
+      },
+      "appearance": {
+        "skin": "sci",
+        "label": "Operation Blacksite",
+        "overrides": {
+          "--accent": "#00F0FF",
+          "--glow1": "rgba(0,240,255,.15)"
+        },
+        "transitions": {
+          "alert": {
+            "trigger": "primary_50",
+            "overrides": { "--accent": "#FF3366", "--glow1": "rgba(255,51,102,.15)" },
+            "label": "Alert: Sector Breach"
+          },
+          "extraction": {
+            "trigger": "primary_100",
+            "skin": "void",
+            "label": "Extraction Complete"
+          }
+        }
+      }
+    },
+    {
+      "name": "Fantasy Quest with Auto-Advance Narration",
+      "handler": {
+        "name": "The Cartographer",
+        "lines": [
+          "Traveler… the old maps are burning.",
+          "Something is erasing the paths. The roads we knew are gone.",
+          "You must find the Elder Grove before the last line fades.",
+          "Take this fragment. It's all that remains."
+        ],
+        "type_speed": 35,
+        "auto_advance": true,
+        "auto_advance_delay": 1800
+      },
+      "appearance": {
+        "skin": "parch",
+        "label": "The Cartographer's Trail",
+        "overrides": {
+          "--accent": "#E8A838",
+          "--accent2": "#C45D2A",
+          "--border-style": "dashed"
+        },
+        "atmosphere": {
+          "grain": 0.06,
+          "scanlines": 0.03,
+          "vignette": 0.5,
+          "blur": 14
+        },
+        "fonts": {
+          "heading": "'Cinzel', serif",
+          "display": "'Pirata One', serif"
+        },
+        "transitions": {
+          "midpoint": {
+            "trigger": "primary_50",
+            "overrides": { "--accent": "#FF5533" },
+            "label": "The Map Burns"
+          },
+          "finale": {
+            "trigger": "primary_100",
+            "skin": "void",
+            "label": "Beyond the Edge"
+          }
+        }
+      }
+    },
+    {
+      "name": "Cozy Bedtime Quest (Gentle Handler)",
+      "handler": {
+        "name": "The Storyteller",
+        "lines": [
+          "Hey there, little adventurer…",
+          "I heard a rumor about something magical hiding nearby.",
+          "Want to go find it together? I'll show you the way.",
+          "Remember — the best treasures are the ones you share."
+        ],
+        "type_speed": 40,
+        "auto_advance": false
+      },
+      "appearance": {
+        "skin": "cozy",
+        "label": "Bedtime Quest",
+        "overrides": { "--accent": "#FFB5E8" },
+        "atmosphere": { "grain": 0.02, "vignette": 0.3, "blur": 16 }
+      }
+    }
+  ]
+}

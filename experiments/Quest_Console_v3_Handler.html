@@ -1,0 +1,2656 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Quest Console — Adventure Planner</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=JetBrains+Mono:wght@400;700&family=Outfit:wght@400;700;900&family=Pirata+One&family=Orbitron:wght@700;900&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      /* === BASE SKIN TOKENS === */
+      --bg0:#070A12;
+      --bg1:#0B1020;
+      --glass:rgba(255,255,255,.06);
+      --glass2:rgba(255,255,255,.10);
+      --stroke:rgba(255,255,255,.12);
+      --text:#EAF2FF;
+      --muted:rgba(234,242,255,.72);
+      --muted2:rgba(234,242,255,.55);
+      --accent:#74D6FF;
+      --accent2:#B48CFF;
+      --danger:#FF4D6D;
+      --good:#58F29D;
+      --warn:#FFCC66;
+
+      /* === ATMOSPHERE TOKENS (story-driven) === */
+      --glow1:rgba(116,214,255,.18);
+      --glow2:rgba(180,140,255,.18);
+      --glow-accent:rgba(116,214,255,.35);
+      --texture-opacity: 0.04;
+      --grain-opacity: 0.03;
+      --vignette-opacity: 0.4;
+      --panel-blur: 12px;
+      --heading-font: 'Outfit', ui-sans-serif, system-ui, sans-serif;
+      --body-font: 'Outfit', ui-sans-serif, system-ui, sans-serif;
+      --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+      --display-font: var(--heading-font);
+
+      /* === DECORATIVE === */
+      --border-style: solid;
+      --border-glow: 0 0 0 transparent;
+      --card-shadow: 0 24px 64px rgba(0,0,0,.55);
+      --accent-glow: 0 0 24px rgba(116,214,255,.15);
+
+      --radius:18px;
+      --radius2:26px;
+    }
+
+    /* ============================================
+       SKIN: SCI (Neon Terminal / Cyber Ops)
+       ============================================ */
+    body[data-skin="sci"]{
+      --bg0:#020810; --bg1:#060D1C;
+      --accent:#00F0FF; --accent2:#8A7CFF;
+      --glass:rgba(0,240,255,.04); --glass2:rgba(0,240,255,.07);
+      --stroke:rgba(0,240,255,.14);
+      --glow1:rgba(0,240,255,.15); --glow2:rgba(138,124,255,.12);
+      --glow-accent:rgba(0,240,255,.4);
+      --heading-font: 'Orbitron', monospace;
+      --display-font: 'Orbitron', monospace;
+      --border-glow: 0 0 12px rgba(0,240,255,.08);
+      --accent-glow: 0 0 32px rgba(0,240,255,.2);
+      --texture-opacity: 0.025;
+      --grain-opacity: 0.05;
+    }
+
+    /* ============================================
+       SKIN: PARCH (Old World / Treasure Map)
+       ============================================ */
+    body[data-skin="parch"]{
+      --bg0:#1A1208; --bg1:#130E06;
+      --accent:#F2C14E; --accent2:#D4845A;
+      --text:#F5E6C8; --muted:rgba(245,230,200,.72); --muted2:rgba(245,230,200,.50);
+      --glass:rgba(242,193,78,.05); --glass2:rgba(242,193,78,.08);
+      --stroke:rgba(242,193,78,.16);
+      --glow1:rgba(242,193,78,.12); --glow2:rgba(212,132,90,.10);
+      --glow-accent:rgba(242,193,78,.3);
+      --heading-font: 'Cinzel', serif;
+      --display-font: 'Pirata One', 'Cinzel', serif;
+      --border-style: dashed;
+      --border-glow: 0 0 8px rgba(242,193,78,.06);
+      --accent-glow: 0 0 28px rgba(242,193,78,.15);
+      --texture-opacity: 0.06;
+      --grain-opacity: 0.06;
+      --vignette-opacity: 0.55;
+    }
+
+    /* ============================================
+       SKIN: COZY (Soft Storybook / Pastel Glow)
+       ============================================ */
+    body[data-skin="cozy"]{
+      --bg0:#0E0A1E; --bg1:#140F28;
+      --accent:#FF9FD6; --accent2:#88D7FF;
+      --glass:rgba(255,159,214,.04); --glass2:rgba(255,159,214,.07);
+      --stroke:rgba(255,159,214,.14);
+      --glow1:rgba(255,159,214,.14); --glow2:rgba(136,215,255,.12);
+      --glow-accent:rgba(255,159,214,.3);
+      --heading-font: 'Quicksand', sans-serif;
+      --display-font: 'Quicksand', sans-serif;
+      --border-glow: 0 0 10px rgba(255,159,214,.06);
+      --accent-glow: 0 0 24px rgba(255,159,214,.12);
+      --texture-opacity: 0.02;
+      --grain-opacity: 0.02;
+      --vignette-opacity: 0.3;
+    }
+
+    /* ============================================
+       SKIN: MAP (Explorer / Cartography)
+       ============================================ */
+    body[data-skin="map"]{
+      --bg0:#080A08; --bg1:#0D120D;
+      --accent:#7AE2C6; --accent2:#E6C87A;
+      --glass:rgba(122,226,198,.04); --glass2:rgba(122,226,198,.07);
+      --stroke:rgba(122,226,198,.14);
+      --glow1:rgba(122,226,198,.12); --glow2:rgba(230,200,122,.10);
+      --glow-accent:rgba(122,226,198,.3);
+      --heading-font: 'Cinzel', serif;
+      --display-font: 'Cinzel', serif;
+      --border-glow: 0 0 8px rgba(122,226,198,.05);
+      --accent-glow: 0 0 22px rgba(122,226,198,.12);
+      --texture-opacity: 0.04;
+      --grain-opacity: 0.04;
+      --vignette-opacity: 0.45;
+    }
+
+    /* ============================================
+       SKIN: VOID (Deep Space / Cosmic)
+       ============================================ */
+    body[data-skin="void"]{
+      --bg0:#02010A; --bg1:#06041A;
+      --accent:#C792FF; --accent2:#FF6EC7;
+      --text:#E8E0FF; --muted:rgba(232,224,255,.70); --muted2:rgba(232,224,255,.48);
+      --glass:rgba(199,146,255,.04); --glass2:rgba(199,146,255,.07);
+      --stroke:rgba(199,146,255,.12);
+      --glow1:rgba(199,146,255,.14); --glow2:rgba(255,110,199,.10);
+      --glow-accent:rgba(199,146,255,.35);
+      --heading-font: 'Orbitron', monospace;
+      --display-font: 'Orbitron', monospace;
+      --border-glow: 0 0 14px rgba(199,146,255,.08);
+      --accent-glow: 0 0 36px rgba(199,146,255,.18);
+      --texture-opacity: 0.015;
+      --grain-opacity: 0.04;
+      --vignette-opacity: 0.55;
+    }
+
+    /* ============================================
+       SKIN: FERAL (Jungle / Wild)
+       ============================================ */
+    body[data-skin="feral"]{
+      --bg0:#060D04; --bg1:#0A1606;
+      --accent:#A8FF44; --accent2:#FF8844;
+      --glass:rgba(168,255,68,.04); --glass2:rgba(168,255,68,.07);
+      --stroke:rgba(168,255,68,.14);
+      --glow1:rgba(168,255,68,.12); --glow2:rgba(255,136,68,.10);
+      --glow-accent:rgba(168,255,68,.3);
+      --heading-font: 'Outfit', sans-serif;
+      --display-font: 'Outfit', sans-serif;
+      --border-glow: 0 0 10px rgba(168,255,68,.06);
+      --accent-glow: 0 0 26px rgba(168,255,68,.14);
+      --texture-opacity: 0.05;
+      --grain-opacity: 0.05;
+      --vignette-opacity: 0.5;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+
+    body{
+      margin:0;
+      font-family:var(--body-font);
+      color:var(--text);
+      background: var(--bg0);
+      overflow-x:hidden;
+      -webkit-tap-highlight-color: transparent;
+      transition: background .6s ease, color .4s ease;
+    }
+
+    /* === ATMOSPHERE LAYERS === */
+    body::before{
+      content:'';
+      position:fixed; inset:0;
+      pointer-events:none;
+      z-index:0;
+      background:
+        radial-gradient(1200px 800px at 20% 10%, var(--glow1), transparent 55%),
+        radial-gradient(1200px 800px at 80% 30%, var(--glow2), transparent 55%);
+      transition: background 1s ease;
+    }
+    body::after{
+      content:'';
+      position:fixed; inset:0;
+      pointer-events:none;
+      z-index:1;
+      background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,var(--vignette-opacity)) 100%);
+      transition: background .8s ease;
+    }
+
+    /* Grain overlay */
+    .grain{
+      position:fixed; inset:0;
+      pointer-events:none;
+      z-index:2;
+      opacity: var(--grain-opacity);
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+      background-repeat: repeat;
+      background-size: 180px 180px;
+      mix-blend-mode: overlay;
+    }
+
+    /* Scan-line texture (subtle, skin-dependent) */
+    .scanlines{
+      position:fixed; inset:0;
+      pointer-events:none;
+      z-index:2;
+      opacity: var(--texture-opacity);
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(255,255,255,.08) 2px,
+        rgba(255,255,255,.08) 4px
+      );
+    }
+
+    .wrap{
+      position:relative;
+      z-index:3;
+      min-height:100%;
+      padding: max(14px, env(safe-area-inset-top)) 14px max(16px, env(safe-area-inset-bottom));
+      display:flex;
+      justify-content:center;
+      align-items:flex-start;
+    }
+
+    .app{
+      width:min(980px, 100%);
+      display:grid;
+      gap:14px;
+    }
+
+    /* === TOPBAR === */
+    .topbar{
+      display:flex; gap:10px; align-items:center; justify-content:space-between;
+      padding:12px 14px;
+      background:linear-gradient(180deg, var(--glass2), var(--glass));
+      border:1px var(--border-style) var(--stroke);
+      border-radius:var(--radius2);
+      box-shadow: var(--card-shadow), var(--border-glow);
+      backdrop-filter: blur(var(--panel-blur));
+      transition: all .5s ease;
+    }
+    .brand{
+      display:flex; flex-direction:column; gap:2px;
+      line-height:1.1;
+    }
+    .brand .t{
+      font-family:var(--display-font);
+      font-weight:900;
+      letter-spacing:.14em;
+      text-transform:uppercase;
+      font-size:14px;
+      color:var(--accent);
+      text-shadow: var(--accent-glow);
+      transition: color .4s ease, text-shadow .5s ease;
+    }
+    .brand .s{font-family:var(--mono); font-size:12px; color:var(--muted2)}
+    .chips{display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end}
+    .chip{
+      font-family:var(--mono);
+      font-size:11px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid var(--stroke);
+      background:rgba(0,0,0,.22);
+      color:var(--muted);
+      display:flex; gap:8px; align-items:center;
+      transition: border-color .4s ease;
+    }
+    .chip b{color:var(--accent); font-weight:700; transition: color .4s ease}
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:14px;
+    }
+    @media(min-width: 860px){
+      .grid{grid-template-columns: 1.05fr .95fr}
+    }
+
+    /* === PANEL (glassmorphism) === */
+    .panel{
+      background:linear-gradient(180deg, var(--glass2), var(--glass));
+      border:1px var(--border-style) var(--stroke);
+      border-radius:var(--radius2);
+      box-shadow: var(--card-shadow), var(--border-glow);
+      backdrop-filter: blur(var(--panel-blur));
+      overflow:hidden;
+      transition: all .5s ease;
+    }
+    .panel .hd{
+      padding:14px 14px 10px;
+      display:flex; align-items:flex-start; justify-content:space-between; gap:12px;
+      border-bottom:1px solid rgba(255,255,255,.06);
+    }
+    .title{
+      display:flex; flex-direction:column; gap:6px;
+    }
+    .title h2{
+      margin:0;
+      font-family:var(--heading-font);
+      font-size:14px;
+      letter-spacing:.14em;
+      text-transform:uppercase;
+      color:var(--accent);
+      text-shadow: 0 0 12px rgba(0,0,0,.3);
+      transition: color .4s ease;
+    }
+    .title p{
+      margin:0;
+      font-family:var(--mono);
+      font-size:12px;
+      color:var(--muted2);
+      line-height:1.35;
+    }
+
+    .btnrow{display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end}
+    button{
+      appearance:none; border:0; cursor:pointer;
+      color:var(--text);
+      font-family:var(--heading-font);
+      background:rgba(0,0,0,.24);
+      border:1px solid var(--stroke);
+      padding:10px 12px;
+      border-radius:14px;
+      font-weight:700;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      font-size:11px;
+      transition: transform .08s ease, background .2s ease, border-color .3s ease, box-shadow .3s ease;
+      user-select:none;
+    }
+    button:hover{
+      transform: translateY(-1px);
+      background:rgba(0,0,0,.30);
+      box-shadow: var(--border-glow);
+    }
+    button:active{transform: translateY(0px) scale(.99)}
+    button.primary{
+      background:linear-gradient(135deg, color-mix(in srgb, var(--accent) 20%, transparent), color-mix(in srgb, var(--accent2) 20%, transparent));
+      border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+      box-shadow: 0 0 16px color-mix(in srgb, var(--accent) 10%, transparent);
+    }
+    button.primary:hover{
+      box-shadow: 0 0 24px color-mix(in srgb, var(--accent) 18%, transparent);
+    }
+    button.good{
+      background:linear-gradient(135deg, rgba(88,242,157,.18), rgba(116,214,255,.12));
+      border-color: rgba(88,242,157,.28);
+    }
+    button.danger{
+      background:linear-gradient(135deg, rgba(255,77,109,.20), rgba(0,0,0,.15));
+      border-color: rgba(255,77,109,.32);
+    }
+    button.ghost{
+      background:transparent;
+    }
+
+    .body{
+      padding:14px;
+    }
+
+    /* === FORMS === */
+    .form{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:12px;
+    }
+    .form .full{grid-column:1/-1}
+    label{
+      display:flex; flex-direction:column; gap:6px;
+      font-family:var(--heading-font);
+      font-size:11px; letter-spacing:.12em; text-transform:uppercase;
+      color:var(--muted2);
+    }
+    input, select, textarea{
+      width:100%;
+      font-family:var(--body-font);
+      color:var(--text);
+      background:rgba(0,0,0,.24);
+      border:1px solid var(--stroke);
+      border-radius:14px;
+      padding:12px;
+      outline:none;
+      transition: border-color .3s ease, box-shadow .3s ease;
+    }
+    input:focus, select:focus, textarea:focus{
+      border-color: var(--accent);
+      box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 12%, transparent);
+    }
+    textarea{min-height:92px; resize:vertical}
+    .hint{font-family:var(--mono); color:var(--muted2); font-size:12px; line-height:1.35}
+
+    /* === REVEAL (Oracle reveal) === */
+    .reveal{
+      display:none;
+      padding:14px;
+    }
+    .reveal.active{display:block}
+
+    .zoltar{
+      position:relative;
+      border:1px var(--border-style) color-mix(in srgb, var(--accent) 22%, transparent);
+      border-radius:var(--radius2);
+      padding:18px;
+      overflow:hidden;
+      background: rgba(0,0,0,.24);
+    }
+    .zoltar::before{
+      content:'';
+      position:absolute; inset:0;
+      pointer-events:none;
+      background:
+        radial-gradient(600px 320px at 60% 0%, var(--glow1), transparent 60%),
+        radial-gradient(700px 320px at 20% 100%, var(--glow2), transparent 60%);
+      opacity:.6;
+    }
+    .zoltar > *{position:relative; z-index:1}
+
+    .zoltar .big{
+      font-family:var(--heading-font);
+      font-weight:900;
+      letter-spacing:.14em;
+      text-transform:uppercase;
+      font-size:12px;
+      margin:0 0 6px 0;
+      color:var(--muted2);
+    }
+    .zoltar .questTitle{
+      margin:0;
+      font-family:var(--display-font);
+      font-size:22px;
+      letter-spacing:.03em;
+      line-height:1.1;
+      color:var(--accent);
+      text-shadow: var(--accent-glow);
+    }
+    .zoltar .hook{
+      margin:8px 0 0 0;
+      color:var(--muted);
+      font-family:var(--mono);
+      font-size:13px;
+      line-height:1.35;
+      font-style:italic;
+    }
+    .list{
+      margin-top:12px;
+      display:grid;
+      gap:10px;
+      grid-template-columns: 1fr;
+    }
+    @media(min-width:860px){ .list{grid-template-columns: 1fr 1fr} }
+
+    .card{
+      border:1px solid color-mix(in srgb, var(--accent) 12%, transparent);
+      background:rgba(0,0,0,.22);
+      border-radius:18px;
+      padding:12px;
+      transition: border-color .4s ease;
+    }
+    .card h4{
+      margin:0 0 8px 0;
+      font-family:var(--heading-font);
+      font-size:12px;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+      color:var(--accent);
+      opacity:.7;
+    }
+    .ol{
+      margin:0;
+      padding-left:18px;
+      color:var(--text);
+      font-family:var(--mono);
+      font-size:13px;
+      line-height:1.5;
+    }
+    .metaRow{
+      margin-top:12px;
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+    }
+    .pill{
+      font-family:var(--mono);
+      font-size:12px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid color-mix(in srgb, var(--accent) 16%, transparent);
+      background:rgba(0,0,0,.22);
+      color:var(--muted);
+      transition: border-color .4s ease;
+    }
+
+    /* === CONSOLE === */
+    .console{
+      display:none;
+    }
+    .console.active{display:block}
+    .consoleHeader{
+      padding:14px 14px 10px;
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      border-bottom:1px solid rgba(255,255,255,.06);
+    }
+    .qh{
+      display:flex; flex-direction:column; gap:6px;
+      min-width:0;
+    }
+    .qh .qt{
+      font-family:var(--display-font);
+      font-size:18px;
+      font-weight:900;
+      line-height:1.1;
+      margin:0;
+      letter-spacing:.03em;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+      color:var(--accent);
+      text-shadow: var(--accent-glow);
+    }
+    .qh .qs{
+      font-family:var(--mono);
+      font-size:12px;
+      color:var(--muted2);
+      margin:0;
+      line-height:1.35;
+    }
+
+    .statsStrip{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      min-width:240px;
+      align-items:flex-end;
+    }
+    .statline{
+      font-family:var(--mono);
+      font-size:12px;
+      color:var(--muted2);
+    }
+    .xp{
+      font-family:var(--mono);
+      font-size:12px;
+      color:var(--muted);
+    }
+
+    .bar{
+      width:220px;
+      height:10px;
+      border-radius:999px;
+      border:1px solid color-mix(in srgb, var(--accent) 18%, transparent);
+      background:rgba(0,0,0,.24);
+      overflow:hidden;
+    }
+    .bar > i{
+      display:block; height:100%;
+      width:0%;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      box-shadow: 0 0 18px color-mix(in srgb, var(--accent) 30%, transparent);
+      transition: width .4s ease;
+    }
+    .bar.side > i{
+      background: linear-gradient(90deg, var(--good), var(--accent));
+    }
+
+    .consoleBody{
+      padding:14px;
+      display:grid;
+      gap:12px;
+    }
+
+    .artifactRow{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:10px;
+      padding:12px;
+      border:1px var(--border-style) color-mix(in srgb, var(--accent2) 16%, transparent);
+      background:rgba(0,0,0,.22);
+      border-radius:18px;
+      position:relative;
+      overflow:hidden;
+    }
+    .artifactRow::before{
+      content:'';
+      position:absolute; inset:0;
+      pointer-events:none;
+      background: radial-gradient(400px 200px at 80% 50%, color-mix(in srgb, var(--accent2) 8%, transparent), transparent 70%);
+    }
+    .artifactRow > *{position:relative; z-index:1}
+    .artifactRow .left{
+      display:flex; flex-direction:column; gap:4px;
+    }
+    .artifactRow .left b{
+      font-family:var(--heading-font);
+      font-size:12px; letter-spacing:.12em; text-transform:uppercase;
+      color:var(--accent2);
+    }
+    .artifactRow .left span{
+      font-family:var(--mono); font-size:12px; color:var(--muted);
+      line-height:1.35;
+    }
+
+    .scrollBox{
+      border:1px solid color-mix(in srgb, var(--accent) 10%, transparent);
+      background:rgba(0,0,0,.22);
+      border-radius:18px;
+      padding:12px;
+      max-height: 360px;
+      overflow:auto;
+    }
+    .sect{margin-bottom:12px}
+    .sect h3{
+      margin:0 0 8px 0;
+      font-family:var(--heading-font);
+      font-size:12px;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+      color:var(--accent);
+      opacity:.65;
+    }
+    .task{
+      display:flex; align-items:flex-start; gap:10px;
+      padding:10px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.06);
+      background:rgba(0,0,0,.16);
+      margin-bottom:8px;
+      transition: border-color .3s ease, background .3s ease;
+    }
+    .task:hover{
+      border-color: color-mix(in srgb, var(--accent) 18%, transparent);
+    }
+    .task input[type="checkbox"]{
+      margin-top:2px;
+      width:18px; height:18px;
+      accent-color: var(--accent);
+    }
+    .task .txt{
+      display:flex; flex-direction:column; gap:4px;
+      min-width:0;
+    }
+    .task .txt .line{
+      font-family:var(--mono);
+      font-size:13px;
+      color:var(--text);
+      line-height:1.35;
+      word-wrap:break-word;
+    }
+    .task .txt .sub{
+      font-family:var(--mono);
+      font-size:12px;
+      color:var(--muted2);
+      display:flex; gap:8px; flex-wrap:wrap;
+      align-items:center;
+    }
+    .badge{
+      font-family:var(--mono);
+      font-size:11px;
+      padding:2px 8px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(0,0,0,.16);
+      color:var(--muted);
+    }
+    .badge.good{border-color: rgba(88,242,157,.22); color: rgba(88,242,157,.95)}
+    .badge.warn{border-color: rgba(255,204,102,.24); color: rgba(255,204,102,.95)}
+
+    .bottomNav{
+      display:grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap:10px;
+      padding:14px;
+      border-top:1px solid rgba(255,255,255,.06);
+      background:rgba(0,0,0,.12);
+    }
+    .bottomNav button{width:100%; padding:12px 10px}
+
+    /* === MODAL === */
+    .modalBack{
+      position:fixed; inset:0;
+      background: rgba(0,0,0,.65);
+      backdrop-filter: blur(6px);
+      display:none;
+      align-items:flex-end;
+      justify-content:center;
+      padding: 14px 14px max(14px, env(safe-area-inset-bottom));
+      z-index:50;
+    }
+    .modalBack.active{display:flex}
+    .modal{
+      width:min(900px, 100%);
+      border-radius:24px;
+      border:1px solid color-mix(in srgb, var(--accent) 16%, transparent);
+      background: linear-gradient(180deg, var(--glass2), var(--glass));
+      backdrop-filter: blur(16px);
+      box-shadow: var(--card-shadow), var(--border-glow);
+      overflow:hidden;
+      max-height: 88vh;
+      display:flex;
+      flex-direction:column;
+    }
+    .modal .mh{
+      padding:12px 14px;
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+    }
+    .modal .mh .t{
+      font-family:var(--display-font);
+      font-weight:900;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+      font-size:12px;
+      color:var(--accent);
+    }
+    .modal .mc{
+      padding:14px;
+      overflow:auto;
+      display:grid;
+      gap:12px;
+    }
+    .artifactCard{
+      border:1px solid color-mix(in srgb, var(--accent) 12%, transparent);
+      border-radius:18px;
+      background:rgba(0,0,0,.22);
+      padding:12px;
+    }
+    .artifactCard h4{
+      margin:0 0 8px 0;
+      font-family:var(--heading-font);
+      font-size:12px;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+      color:var(--accent2);
+    }
+    .artifactCard p{
+      margin:0;
+      font-family:var(--mono);
+      font-size:13px;
+      line-height:1.5;
+      color:var(--text);
+    }
+    .artifactCard img{
+      width:100%;
+      border-radius:16px;
+      border:1px solid color-mix(in srgb, var(--accent) 12%, transparent);
+      display:block;
+      margin-top:10px;
+      background:rgba(0,0,0,.22);
+    }
+    .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+
+    /* === PACKS === */
+    .packs{
+      display:none;
+    }
+    .packs.active{display:block}
+    .packList{
+      display:grid; gap:10px;
+    }
+    .packItem{
+      border:1px solid color-mix(in srgb, var(--accent) 12%, transparent);
+      background:rgba(0,0,0,.22);
+      border-radius:18px;
+      padding:12px;
+      display:flex;
+      gap:12px;
+      align-items:flex-start;
+      justify-content:space-between;
+    }
+    .packItem .left{
+      display:flex; flex-direction:column; gap:6px;
+      min-width:0;
+    }
+    .packItem .left b{
+      font-family:var(--heading-font);
+      font-size:12px;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+      color:var(--accent2);
+    }
+    .packItem .left .name{
+      font-family:var(--display-font);
+      font-weight:900;
+      font-size:16px;
+      line-height:1.2;
+      margin:0;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+      color:var(--text);
+    }
+    .packItem .left .meta{
+      font-family:var(--mono);
+      font-size:12px;
+      color:var(--muted2);
+    }
+    .packItem .right{display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end}
+
+    /* === SKIN PICKER STRIP === */
+    .skinStrip{
+      display:flex; gap:6px; flex-wrap:wrap; padding:4px 0;
+    }
+    .skinDot{
+      width:28px; height:28px;
+      border-radius:50%;
+      border:2px solid var(--stroke);
+      cursor:pointer;
+      transition: transform .15s ease, box-shadow .2s ease;
+      position:relative;
+    }
+    .skinDot:hover{transform:scale(1.15)}
+    .skinDot.active{
+      border-color: var(--accent);
+      box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 30%, transparent);
+    }
+    .skinDot[data-skin="sci"]{background:linear-gradient(135deg,#020810,#00F0FF)}
+    .skinDot[data-skin="parch"]{background:linear-gradient(135deg,#1A1208,#F2C14E)}
+    .skinDot[data-skin="cozy"]{background:linear-gradient(135deg,#0E0A1E,#FF9FD6)}
+    .skinDot[data-skin="map"]{background:linear-gradient(135deg,#080A08,#7AE2C6)}
+    .skinDot[data-skin="void"]{background:linear-gradient(135deg,#02010A,#C792FF)}
+    .skinDot[data-skin="feral"]{background:linear-gradient(135deg,#060D04,#A8FF44)}
+
+    /* === TOAST === */
+    .toast{
+      position:fixed;
+      left:50%;
+      bottom: max(14px, env(safe-area-inset-bottom));
+      transform: translateX(-50%) translateY(10px);
+      padding:10px 14px;
+      border-radius:999px;
+      border:1px solid color-mix(in srgb, var(--accent) 20%, transparent);
+      background:rgba(0,0,0,.70);
+      backdrop-filter: blur(12px);
+      color:var(--text);
+      font-family:var(--mono);
+      font-size:12px;
+      display:none;
+      z-index:60;
+      box-shadow: 0 18px 48px rgba(0,0,0,.5), var(--border-glow);
+      opacity:0;
+      transition: opacity .2s ease, transform .2s ease;
+    }
+    .toast.show{
+      display:block;
+      opacity:1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* Small util */
+    .muted{color:var(--muted2)}
+    .sep{height:1px;background:rgba(255,255,255,.08); margin:12px 0}
+    .rightText{text-align:right}
+
+    /* === STORY-MODE INDICATOR === */
+    .storyIndicator{
+      display:none;
+      padding:8px 14px;
+      font-family:var(--mono);
+      font-size:11px;
+      color:var(--muted2);
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      border-bottom:1px solid rgba(255,255,255,.04);
+    }
+    .storyIndicator.active{display:flex; gap:8px; align-items:center}
+    .storyDot{
+      width:8px; height:8px;
+      border-radius:50%;
+      background:var(--accent);
+      box-shadow: 0 0 8px var(--accent);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse{
+      0%,100%{opacity:.5; transform:scale(.9)}
+      50%{opacity:1; transform:scale(1.1)}
+    }
+
+    /* === Entrance anim === */
+    @keyframes fadeSlideUp{
+      from{opacity:0; transform:translateY(12px)}
+      to{opacity:1; transform:translateY(0)}
+    }
+    .panel{animation: fadeSlideUp .5s ease both}
+    .topbar{animation: fadeSlideUp .4s ease both}
+    .grid > :nth-child(2){animation-delay:.1s}
+    /* ===========================================================
+       HANDLER BRIEFING — Full-screen cinematic overlay
+       =========================================================== */
+    #handlerOverlay{
+      position:fixed; inset:0; z-index:100;
+      display:none; flex-direction:column;
+      align-items:center; justify-content:center;
+      background:#000; overflow:hidden;
+    }
+    #handlerOverlay.active{display:flex}
+
+    .handler-atmos{
+      position:absolute; inset:0; pointer-events:none;
+      background:
+        radial-gradient(900px 600px at 50% 40%, var(--glow1), transparent 60%),
+        radial-gradient(700px 500px at 30% 70%, var(--glow2), transparent 60%);
+      opacity:0; transition:opacity 1.5s ease;
+    }
+    #handlerOverlay.active .handler-atmos{opacity:1}
+
+    #handlerParticles{position:absolute; inset:0; pointer-events:none; z-index:1}
+
+    .handler-vignette{
+      position:absolute; inset:0; pointer-events:none; z-index:2;
+      background:radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,.7) 100%);
+    }
+    .handler-grain{
+      position:absolute; inset:0; pointer-events:none; z-index:3;
+      opacity:0.05;
+      background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+      background-repeat:repeat; background-size:180px; mix-blend-mode:overlay;
+    }
+
+    .handler-stage{
+      position:relative; z-index:10;
+      display:flex; flex-direction:column;
+      align-items:center; gap:0;
+      width:min(600px, 90vw); padding:20px;
+    }
+
+    /* Handler figure */
+    .handler-figure{
+      width:180px; height:240px; position:relative;
+      margin-bottom:12px; opacity:0;
+      transform:scale(0.92) translateY(20px);
+      transition:opacity 1.2s ease .3s, transform 1.2s ease .3s;
+      filter:drop-shadow(0 0 40px var(--glow-accent));
+    }
+    #handlerOverlay.playing .handler-figure{opacity:1; transform:scale(1) translateY(0)}
+    .handler-figure svg{width:100%; height:100%}
+
+    .handler-breath{
+      animation:handlerBreathe 4s ease-in-out infinite;
+      transform-origin:center bottom;
+    }
+    @keyframes handlerBreathe{
+      0%,100%{transform:scaleY(1) translateY(0)}
+      50%{transform:scaleY(1.015) translateY(-2px)}
+    }
+    .handler-glitch{animation:handlerGlitch 8s ease-in-out infinite}
+    @keyframes handlerGlitch{
+      0%,94%,100%{transform:translate(0,0); filter:none}
+      95%{transform:translate(-2px,1px); filter:hue-rotate(40deg) brightness(1.3)}
+      96%{transform:translate(3px,-1px); filter:hue-rotate(-20deg)}
+      97%{transform:translate(-1px,0); filter:none}
+    }
+    .handler-eye{animation:eyeGlow 3s ease-in-out infinite}
+    @keyframes eyeGlow{
+      0%,100%{opacity:.6; filter:drop-shadow(0 0 4px var(--accent))}
+      50%{opacity:1; filter:drop-shadow(0 0 12px var(--accent)) drop-shadow(0 0 24px var(--accent))}
+    }
+
+    /* Dialogue box */
+    .handler-dialogue{
+      width:100%; background:rgba(0,0,0,.45);
+      border:1px solid color-mix(in srgb, var(--accent) 20%, transparent);
+      border-radius:20px; padding:20px 22px;
+      backdrop-filter:blur(12px);
+      box-shadow:0 0 40px rgba(0,0,0,.5), 0 0 16px color-mix(in srgb, var(--accent) 6%, transparent);
+      position:relative; overflow:hidden;
+      opacity:0; transform:translateY(16px);
+      transition:opacity .8s ease .6s, transform .8s ease .6s;
+    }
+    #handlerOverlay.playing .handler-dialogue{opacity:1; transform:translateY(0)}
+    .handler-dialogue::before{
+      content:''; position:absolute; top:0; left:0; right:0; height:1px;
+      background:linear-gradient(90deg, transparent, var(--accent), transparent);
+      opacity:.4;
+    }
+    .handler-speaker{
+      font-family:var(--heading-font); font-size:11px;
+      letter-spacing:.16em; text-transform:uppercase;
+      color:var(--accent); margin:0 0 10px 0; opacity:.8;
+    }
+    .handler-text{
+      font-family:var(--mono); font-size:14px; line-height:1.55;
+      color:var(--text); min-height:60px; margin:0;
+    }
+    .handler-text .cursor{
+      display:inline-block; width:2px; height:1em;
+      background:var(--accent); margin-left:2px;
+      vertical-align:text-bottom; animation:blink .6s step-end infinite;
+    }
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+    .handler-progress{display:flex; gap:6px; margin-top:16px; justify-content:center}
+    .handler-progress .dot{
+      width:8px; height:8px; border-radius:50%;
+      background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.12);
+      transition:background .3s ease, border-color .3s ease, box-shadow .3s ease;
+    }
+    .handler-progress .dot.done{
+      background:var(--accent); border-color:var(--accent);
+      box-shadow:0 0 8px color-mix(in srgb, var(--accent) 40%, transparent);
+    }
+    .handler-progress .dot.current{
+      background:color-mix(in srgb, var(--accent) 50%, transparent);
+      border-color:var(--accent); animation:pulse 1.5s ease-in-out infinite;
+    }
+
+    .handler-controls{
+      display:flex; gap:10px; margin-top:14px; justify-content:center;
+      opacity:0; transition:opacity .5s ease 1.2s;
+    }
+    #handlerOverlay.playing .handler-controls{opacity:1}
+    .handler-controls button{padding:10px 18px; border-radius:999px; font-family:var(--mono); font-size:11px; letter-spacing:.1em}
+
+    .handler-audio-indicator{
+      position:absolute; top:14px; right:16px; z-index:20;
+      display:flex; gap:3px; align-items:flex-end; height:16px;
+      opacity:0; transition:opacity .4s ease;
+    }
+    .handler-audio-indicator.active{opacity:1}
+    .handler-audio-indicator .bar-a{
+      width:3px; border-radius:2px; background:var(--accent);
+      animation:audioBar 1.2s ease-in-out infinite;
+    }
+    .handler-audio-indicator .bar-a:nth-child(1){height:6px; animation-delay:0s}
+    .handler-audio-indicator .bar-a:nth-child(2){height:12px; animation-delay:.15s}
+    .handler-audio-indicator .bar-a:nth-child(3){height:8px; animation-delay:.3s}
+    .handler-audio-indicator .bar-a:nth-child(4){height:14px; animation-delay:.1s}
+    .handler-audio-indicator .bar-a:nth-child(5){height:5px; animation-delay:.25s}
+    @keyframes audioBar{0%,100%{transform:scaleY(1)}50%{transform:scaleY(.3)}}
+
+    /* Wipe transition */
+    #briefingWipe{
+      position:fixed; inset:0; z-index:99;
+      pointer-events:none; display:none;
+    }
+    #briefingWipe.active{display:block; pointer-events:all}
+    .wipe-blade{
+      position:absolute; width:200vw; height:200vh;
+      background:var(--accent); opacity:.12;
+      transform:rotate(-15deg) translateX(-200%);
+    }
+    .wipe-blade.go{animation:wipeSlash .7s cubic-bezier(.45,0,.15,1) forwards}
+    @keyframes wipeSlash{
+      0%{transform:rotate(-15deg) translateX(-200%); opacity:.12}
+      40%{opacity:.2}
+      100%{transform:rotate(-15deg) translateX(200%); opacity:0}
+    }
+    .wipe-flash{position:absolute; inset:0; background:var(--accent); opacity:0}
+    .wipe-flash.go{animation:wipeFlash .6s ease forwards}
+    @keyframes wipeFlash{0%{opacity:0}20%{opacity:.15}100%{opacity:0}}
+  </style>
+</head>
+<body data-skin="sci">
+  <div class="grain"></div>
+  <div class="scanlines"></div>
+
+  <!-- HANDLER BRIEFING OVERLAY -->
+  <div id="handlerOverlay">
+    <div class="handler-atmos"></div>
+    <canvas id="handlerParticles"></canvas>
+    <div class="handler-vignette"></div>
+    <div class="handler-grain"></div>
+    <div class="handler-audio-indicator" id="handlerAudioInd">
+      <div class="bar-a"></div><div class="bar-a"></div><div class="bar-a"></div>
+      <div class="bar-a"></div><div class="bar-a"></div>
+    </div>
+    <div class="handler-stage">
+      <div class="handler-figure" id="handlerFigure">
+        <svg viewBox="0 0 180 240" fill="none" xmlns="http://www.w3.org/2000/svg" class="handler-glitch">
+          <g class="handler-breath">
+            <path d="M90 50 C55 50, 20 90, 15 200 L15 240 L165 240 L165 200 C160 90, 125 50, 90 50Z" fill="rgba(255,255,255,.04)" stroke="var(--accent)" stroke-width="1" stroke-opacity=".25"/>
+            <path d="M90 55 C62 55, 32 90, 28 195 L28 235 L152 235 L152 195 C148 90, 118 55, 90 55Z" fill="rgba(0,0,0,.4)"/>
+            <path d="M90 8 C50 8, 28 40, 30 72 C32 95, 50 108, 90 108 C130 108, 148 95, 150 72 C152 40, 130 8, 90 8Z" fill="rgba(0,0,0,.6)" stroke="var(--accent)" stroke-width="1.2" stroke-opacity=".3"/>
+            <ellipse cx="90" cy="70" rx="42" ry="32" fill="rgba(0,0,0,.85)"/>
+            <g class="handler-eye">
+              <ellipse cx="76" cy="68" rx="5" ry="2.5" fill="var(--accent)" opacity=".8"/>
+              <ellipse cx="104" cy="68" rx="5" ry="2.5" fill="var(--accent)" opacity=".8"/>
+            </g>
+            <path d="M58 108 Q90 125 122 108" fill="none" stroke="var(--accent)" stroke-width="1" stroke-opacity=".2"/>
+            <circle cx="90" cy="150" r="12" fill="none" stroke="var(--accent)" stroke-width=".8" stroke-opacity=".15"/>
+            <path d="M90 140 L85 150 L90 160 L95 150 Z" fill="none" stroke="var(--accent)" stroke-width=".8" stroke-opacity=".2"/>
+            <path d="M70 120 Q75 180 60 240" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="1"/>
+            <path d="M110 120 Q105 180 120 240" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="1"/>
+          </g>
+        </svg>
+      </div>
+      <div class="handler-dialogue" id="handlerDialogue">
+        <p class="handler-speaker" id="handlerSpeaker">The Handler</p>
+        <p class="handler-text" id="handlerText"><span class="cursor"></span></p>
+        <div class="handler-progress" id="handlerProgress"></div>
+      </div>
+      <div class="handler-controls" id="handlerControls">
+        <button class="ghost" id="btnSkipBrief">Skip</button>
+        <button class="primary" id="btnTapContinue">Continue</button>
+      </div>
+    </div>
+    <audio id="handlerAudio" preload="none"></audio>
+  </div>
+
+  <!-- WIPE TRANSITION -->
+  <div id="briefingWipe">
+    <div class="wipe-blade" id="wipeBlade"></div>
+    <div class="wipe-flash" id="wipeFlash"></div>
+  </div>
+
+  <div class="wrap">
+    <div class="app" id="app">
+
+      <div class="topbar">
+        <div class="brand">
+          <div class="t">Quest Console</div>
+          <div class="s" id="subline">makerapp.cc / webapp ready</div>
+        </div>
+
+        <div class="chips">
+          <div class="chip">SKIN: <b id="skinName">SCI</b></div>
+          <div class="chip">XP: <b id="xpChip">0</b></div>
+          <div class="chip">LEVEL: <b id="lvlChip">1</b></div>
+        </div>
+      </div>
+
+      <div class="grid">
+        <!-- LEFT: REQUEST / REVEAL -->
+        <section class="panel" id="requestPanel">
+          <div class="hd">
+            <div class="title">
+              <h2>Quest Request</h2>
+              <p>Feed the oracle your time + vibe. It reveals a quest. PASS to re-roll. ACCEPT to begin.</p>
+            </div>
+            <div class="btnrow">
+              <button class="ghost" id="btnReset">Reset</button>
+              <button class="ghost" id="btnSkin">Skin</button>
+            </div>
+          </div>
+
+          <!-- Story skin indicator -->
+          <div class="storyIndicator" id="storyIndicator">
+            <div class="storyDot"></div>
+            <span id="storyIndicatorText">Story skin active</span>
+          </div>
+
+          <div class="body" id="requestBody">
+            <div class="form" id="questForm">
+              <label>
+                Time Available
+                <select id="fTime">
+                  <option value="30m">30 minutes</option>
+                  <option value="60m" selected>60 minutes</option>
+                  <option value="2h">2 hours</option>
+                  <option value="halfday">Half-day</option>
+                </select>
+              </label>
+
+              <label>
+                Weather
+                <select id="fWeather">
+                  <option value="auto" selected>Auto / vibes-only</option>
+                  <option value="sunny">Sunny</option>
+                  <option value="rainy">Rainy</option>
+                  <option value="cold">Cold</option>
+                  <option value="hot">Hot</option>
+                  <option value="windy">Windy</option>
+                </select>
+              </label>
+
+              <label>
+                Vibe
+                <select id="fVibe">
+                  <option value="curious" selected>Curious</option>
+                  <option value="chill">Chill</option>
+                  <option value="active">Active</option>
+                  <option value="cozy">Cozy</option>
+                  <option value="mystery">Mystery</option>
+                  <option value="kid-picks">Kid picks</option>
+                </select>
+              </label>
+
+              <label>
+                Range
+                <select id="fRange">
+                  <option value="walk">Walking</option>
+                  <option value="short-drive" selected>Short drive</option>
+                  <option value="long-drive">Longer drive</option>
+                </select>
+              </label>
+
+              <label class="full">
+                Where are we?
+                <input id="fWhere" placeholder="Near me (GPS) or type a place..." />
+              </label>
+
+              <label class="full">
+                Constraints (optional)
+                <input id="fConstraints" placeholder="Budget, indoor only, stroller-friendly, no crowds, etc." />
+              </label>
+
+              <label class="full">
+                Party names (optional)
+                <input id="fParty" placeholder="Chance + Kiddo (or whatever you want)" />
+              </label>
+
+              <!-- Skin Picker -->
+              <div class="full">
+                <label>Theme</label>
+                <div class="skinStrip" id="skinStrip"></div>
+              </div>
+
+              <div class="full hint">
+                Tip: Skins shift the entire atmosphere — fonts, glow, textures, borders. Story JSON can override any skin automatically.
+              </div>
+
+              <div class="full btnrow">
+                <button class="primary" id="btnSummon">Summon Quest</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="reveal" id="revealBox">
+            <div class="zoltar">
+              <p class="big">The Oracle Reveals...</p>
+              <h3 class="questTitle" id="rTitle">—</h3>
+              <p class="hook" id="rHook">—</p>
+
+              <div class="metaRow" id="rMeta"></div>
+
+              <div class="list">
+                <div class="card">
+                  <h4>Primary Objectives</h4>
+                  <ol class="ol" id="rPrimary"></ol>
+                </div>
+                <div class="card">
+                  <h4>Side Quests</h4>
+                  <ol class="ol" id="rSide"></ol>
+                </div>
+              </div>
+
+              <div class="sep"></div>
+
+              <div class="row" style="justify-content:space-between">
+                <div class="hint" id="rArtifactsHint">Artifacts detected: —</div>
+                <div class="btnrow">
+                  <button id="btnPass">Pass</button>
+                  <button class="good" id="btnAccept">Accept</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- RIGHT: CONSOLE / PACKS -->
+        <section class="panel" id="rightPanel">
+          <!-- CONSOLE -->
+          <div class="console" id="consoleBox">
+            <div class="consoleHeader">
+              <div class="qh">
+                <p class="qs" id="cLine1">ACTIVE QUEST</p>
+                <h3 class="qt" id="cTitle">—</h3>
+                <p class="qs" id="cLine2">—</p>
+              </div>
+
+              <div class="statsStrip">
+                <div class="statline" id="cScoreLine">PLUNDER SCORE: 0</div>
+                <div class="xp" id="cXpLine">XP this quest: 0</div>
+                <div class="bar"><i id="cProgBar"></i></div>
+                <div class="bar side"><i id="cSideBar"></i></div>
+              </div>
+            </div>
+
+            <div class="consoleBody">
+              <div class="artifactRow">
+                <div class="left">
+                  <b>Artifacts</b>
+                  <span id="cArtifactsSub">Tap to open the artifact vault: maps, riddles, clues... maybe a red herring.</span>
+                </div>
+                <div class="btnrow">
+                  <button class="primary" id="btnArtifacts">Open Vault</button>
+                </div>
+              </div>
+
+              <div class="scrollBox">
+                <div class="sect">
+                  <h3>Primary Steps</h3>
+                  <div id="cPrimaryList"></div>
+                </div>
+
+                <div class="sect">
+                  <h3>Side Quests</h3>
+                  <div id="cSideList"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="bottomNav">
+              <button class="primary" id="btnNext">TREK / NEXT</button>
+              <button id="btnLog">LOG</button>
+              <button id="btnMap">MAP</button>
+              <button class="danger" id="btnExit">EXIT</button>
+            </div>
+          </div>
+
+          <!-- PACKS -->
+          <div class="packs active" id="packsBox">
+            <div class="hd">
+              <div class="title">
+                <h2>Adventure Packs</h2>
+                <p>Completed quests become packs. View / export JSON. (Media export can come next.)</p>
+              </div>
+              <div class="btnrow">
+                <button class="ghost" id="btnExportSchema">Schema</button>
+                <button class="ghost" id="btnBackToRequest">New Quest</button>
+              </div>
+            </div>
+            <div class="body">
+              <div class="packList" id="packList"></div>
+              <div class="sep"></div>
+              <div class="hint">
+                MVP stores everything in localStorage (+ media blobs in IndexedDB).
+                Next step: add "cinema playback" and a Year-in-Review pack builder.
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL -->
+  <div class="modalBack" id="modalBack" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true">
+      <div class="mh">
+        <div class="t" id="modalTitle">Artifact Vault</div>
+        <div class="btnrow">
+          <button class="ghost" id="btnModalClose">Close</button>
+        </div>
+      </div>
+      <div class="mc" id="modalContent"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">—</div>
+
+<script>
+/* ===========================
+   Quest Console v2 — Story-Skinnable Edition
+   ======================================== */
+
+const APP_KEY = "quest_console_v3";
+const DB_NAME = "quest_console_media_v1";
+const DB_STORE = "blobs";
+
+/* --------------------------------------------------
+   SKIN REGISTRY
+   Each skin = base CSS vars + metadata.
+   Story JSON can reference a skin by id OR provide
+   a full custom override block.
+   -------------------------------------------------- */
+const SKINS = {
+  sci:   { id:"sci",   label:"SCI",   family:"tech",   icon:"⚡" },
+  parch: { id:"parch", label:"PARCH", family:"fantasy", icon:"📜" },
+  cozy:  { id:"cozy",  label:"COZY",  family:"whimsy", icon:"🌸" },
+  map:   { id:"map",   label:"MAP",   family:"nature",  icon:"🗺" },
+  void:  { id:"void",  label:"VOID",  family:"cosmic",  icon:"🌌" },
+  feral: { id:"feral", label:"FERAL", family:"wild",    icon:"🌿" },
+};
+const SKIN_IDS = Object.keys(SKINS);
+
+const $ = (id) => document.getElementById(id);
+const nowISO = () => new Date().toISOString();
+const fmtDT = (d) => new Date(d).toLocaleString(undefined,{weekday:"short",month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});
+const uid = () => (crypto?.randomUUID?.() || ("id_"+Math.random().toString(16).slice(2)+"_"+Date.now()));
+
+function toast(msg){
+  const el = $("toast");
+  el.textContent = msg;
+  el.classList.add("show");
+  clearTimeout(toast._t);
+  toast._t = setTimeout(()=>el.classList.remove("show"), 1800);
+}
+function clamp(n,a,b){return Math.max(a,Math.min(b,n))}
+
+/* ==========================================
+   STORY APPEARANCE SCHEMA
+   ==========================================
+   This is the JSON shape a story can include
+   to override or extend skins dynamically.
+
+   A quest's JSON can carry an `appearance` block:
+   {
+     "appearance": {
+       "skin": "parch",           // base skin id (from registry)
+       "label": "Cursed Catacombs",
+       "overrides": {             // CSS variable overrides (optional)
+         "--accent": "#FF6633",
+         "--accent2": "#993300",
+         "--glow1": "rgba(255,102,51,.15)",
+         "--border-style": "dashed"
+       },
+       "atmosphere": {
+         "grain": 0.06,           // 0-0.15
+         "scanlines": 0.05,       // 0-0.12
+         "vignette": 0.55,        // 0-0.8
+         "blur": 14               // panel blur px
+       },
+       "fonts": {                 // optional font overrides
+         "heading": "'Cinzel', serif",
+         "display": "'Pirata One', serif",
+         "body": "'Outfit', sans-serif",
+         "mono": "'JetBrains Mono', monospace"
+       },
+       "transitions": {           // phase-based skin shifts
+         "midpoint": {
+           "trigger": "primary_50",  // when 50% primary done
+           "skin": "void",
+           "overrides": { "--accent": "#FF0066" },
+           "label": "The Rift Opens"
+         },
+         "finale": {
+           "trigger": "primary_100",
+           "skin": "feral",
+           "overrides": {},
+           "label": "Emergence"
+         }
+       }
+     }
+   }
+   ========================================== */
+
+const APPEARANCE_SCHEMA = {
+  "$schema": "quest-console-appearance-v1",
+  "description": "Appearance block for Quest Console story JSON. Drop this into your quest/story object under the 'appearance' key.",
+  "shape": {
+    "appearance": {
+      "skin": "string — base skin id from registry: sci | parch | cozy | map | void | feral",
+      "label": "string — display name for this story's theme (shown in UI indicator)",
+      "overrides": {
+        "description": "CSS custom property overrides. Any --var from the skin system.",
+        "examples": {
+          "--accent": "#hex or rgba()",
+          "--accent2": "#hex or rgba()",
+          "--bg0": "#hex",
+          "--bg1": "#hex",
+          "--glow1": "rgba(r,g,b,a)",
+          "--glow2": "rgba(r,g,b,a)",
+          "--glow-accent": "rgba(r,g,b,a)",
+          "--stroke": "rgba(r,g,b,a)",
+          "--glass": "rgba(r,g,b,a)",
+          "--glass2": "rgba(r,g,b,a)",
+          "--text": "#hex",
+          "--muted": "rgba(r,g,b,a)",
+          "--muted2": "rgba(r,g,b,a)",
+          "--border-style": "solid | dashed | dotted | double",
+          "--border-glow": "CSS box-shadow value",
+          "--accent-glow": "CSS text-shadow / box-shadow value",
+          "--card-shadow": "CSS box-shadow value"
+        }
+      },
+      "atmosphere": {
+        "grain": "number 0–0.15 — film grain overlay opacity",
+        "scanlines": "number 0–0.12 — scan-line texture opacity",
+        "vignette": "number 0–0.8 — edge darkening intensity",
+        "blur": "number 6–20 — panel backdrop blur in px"
+      },
+      "fonts": {
+        "heading": "CSS font-family string — section headers, labels",
+        "display": "CSS font-family string — quest titles, brand mark",
+        "body": "CSS font-family string — body text, descriptions",
+        "mono": "CSS font-family string — data, stats, code-style text"
+      },
+      "transitions": {
+        "description": "Phase-based skin shifts as quest progresses. Keys are arbitrary phase names.",
+        "shape": {
+          "[phase_name]": {
+            "trigger": "string — one of: primary_25 | primary_50 | primary_75 | primary_100 | side_50 | side_100 | xp_500 | xp_1000 | manual",
+            "skin": "string — base skin id to transition to (optional, keeps current if omitted)",
+            "overrides": "object — CSS var overrides for this phase (merged on top of base)",
+            "label": "string — indicator text shown during this phase"
+          }
+        }
+      }
+    }
+  },
+  "example": {
+    "appearance": {
+      "skin": "parch",
+      "label": "The Cartographer's Trail",
+      "overrides": {
+        "--accent": "#E8A838",
+        "--accent2": "#C45D2A",
+        "--border-style": "dashed",
+        "--glow1": "rgba(232,168,56,.14)"
+      },
+      "atmosphere": {
+        "grain": 0.06,
+        "scanlines": 0.03,
+        "vignette": 0.5,
+        "blur": 14
+      },
+      "fonts": {
+        "heading": "'Cinzel', serif",
+        "display": "'Pirata One', serif"
+      },
+      "transitions": {
+        "midpoint": {
+          "trigger": "primary_50",
+          "overrides": { "--accent": "#FF5533", "--glow1": "rgba(255,85,51,.18)" },
+          "label": "The Map Burns"
+        },
+        "finale": {
+          "trigger": "primary_100",
+          "skin": "void",
+          "label": "Beyond the Edge"
+        }
+      }
+    }
+  }
+};
+
+/* ---------- Storage ---------- */
+function loadState(){
+  try{
+    const raw = localStorage.getItem(APP_KEY);
+    if(!raw) return defaultState();
+    const s = JSON.parse(raw);
+    return {...defaultState(), ...s};
+  }catch{
+    return defaultState();
+  }
+}
+function saveState(){
+  localStorage.setItem(APP_KEY, JSON.stringify(state));
+  updateTopChips();
+}
+function defaultState(){
+  return {
+    skin:"sci",
+    xp_total: 0,
+    level: 1,
+    packs: [],
+    activeQuest: null
+  };
+}
+let state = loadState();
+
+/* ---------- XP / Leveling ---------- */
+function xpToLevel(xp){
+  return 1 + Math.floor(xp / 1000);
+}
+function addXP(amount, reason=""){
+  state.xp_total += amount;
+  state.level = xpToLevel(state.xp_total);
+  saveState();
+  if(reason) toast(`+${amount} XP · ${reason}`);
+  else toast(`+${amount} XP`);
+}
+
+/* ---------- IndexedDB ---------- */
+function openDB(){
+  return new Promise((resolve,reject)=>{
+    const req = indexedDB.open(DB_NAME, 1);
+    req.onupgradeneeded = ()=>{
+      const db = req.result;
+      if(!db.objectStoreNames.contains(DB_STORE))
+        db.createObjectStore(DB_STORE, {keyPath:"id"});
+    };
+    req.onsuccess = ()=>resolve(req.result);
+    req.onerror = ()=>reject(req.error);
+  });
+}
+async function putBlob(file){
+  const db = await openDB();
+  const id = uid();
+  const rec = {id, type:file.type, name:file.name, size:file.size, created_at:nowISO(), blob:file};
+  return new Promise((resolve,reject)=>{
+    const tx = db.transaction(DB_STORE, "readwrite");
+    tx.objectStore(DB_STORE).put(rec);
+    tx.oncomplete = ()=>resolve(rec);
+    tx.onerror = ()=>reject(tx.error);
+  });
+}
+async function getBlob(id){
+  const db = await openDB();
+  return new Promise((resolve,reject)=>{
+    const tx = db.transaction(DB_STORE, "readonly");
+    const req = tx.objectStore(DB_STORE).get(id);
+    req.onsuccess = ()=>resolve(req.result||null);
+    req.onerror = ()=>reject(req.error);
+  });
+}
+
+/* ===========================================
+   SKIN ENGINE
+   =========================================== */
+
+let activeStoryAppearance = null; // set when quest has appearance block
+let activeTransitionPhase = null;
+
+function setSkin(skinId, storyOverrides=null){
+  if(!SKINS[skinId]) skinId = "sci";
+  state.skin = skinId;
+
+  document.body.setAttribute("data-skin", skinId);
+  $("skinName").textContent = SKINS[skinId].label;
+
+  // Clear any prior story overrides from root
+  clearStoryOverrides();
+
+  // Apply story overrides if present
+  if(storyOverrides){
+    applyStoryOverrides(storyOverrides);
+  }
+
+  updateSkinStrip();
+  saveState();
+}
+
+function clearStoryOverrides(){
+  const root = document.documentElement;
+  // Remove any inline --var overrides we added
+  const tracked = root.dataset.storyVars;
+  if(tracked){
+    tracked.split(",").forEach(v => root.style.removeProperty(v));
+    delete root.dataset.storyVars;
+  }
+}
+
+function applyStoryOverrides(overrides){
+  if(!overrides || typeof overrides !== "object") return;
+  const root = document.documentElement;
+  const vars = [];
+  for(const [key, val] of Object.entries(overrides)){
+    if(key.startsWith("--")){
+      root.style.setProperty(key, val);
+      vars.push(key);
+    }
+  }
+  root.dataset.storyVars = vars.join(",");
+}
+
+function applyStoryAppearance(appearance){
+  if(!appearance) return;
+  activeStoryAppearance = appearance;
+  activeTransitionPhase = null;
+
+  // Set base skin
+  const baseSkin = appearance.skin || state.skin;
+  setSkin(baseSkin, appearance.overrides || null);
+
+  // Atmosphere
+  const atm = appearance.atmosphere;
+  if(atm){
+    const root = document.documentElement;
+    const extras = [];
+    if(atm.grain != null){
+      root.style.setProperty("--grain-opacity", atm.grain);
+      extras.push("--grain-opacity");
+    }
+    if(atm.scanlines != null){
+      root.style.setProperty("--texture-opacity", atm.scanlines);
+      extras.push("--texture-opacity");
+    }
+    if(atm.vignette != null){
+      root.style.setProperty("--vignette-opacity", atm.vignette);
+      extras.push("--vignette-opacity");
+    }
+    if(atm.blur != null){
+      root.style.setProperty("--panel-blur", atm.blur + "px");
+      extras.push("--panel-blur");
+    }
+    // Track these too
+    const prev = root.dataset.storyVars || "";
+    root.dataset.storyVars = [prev, ...extras].filter(Boolean).join(",");
+  }
+
+  // Fonts
+  const fonts = appearance.fonts;
+  if(fonts){
+    const root = document.documentElement;
+    const extras = [];
+    if(fonts.heading){root.style.setProperty("--heading-font", fonts.heading); extras.push("--heading-font")}
+    if(fonts.display){root.style.setProperty("--display-font", fonts.display); extras.push("--display-font")}
+    if(fonts.body){root.style.setProperty("--body-font", fonts.body); extras.push("--body-font")}
+    if(fonts.mono){root.style.setProperty("--mono", fonts.mono); extras.push("--mono")}
+    const prev = root.dataset.storyVars || "";
+    root.dataset.storyVars = [prev, ...extras].filter(Boolean).join(",");
+  }
+
+  // Show indicator
+  const ind = $("storyIndicator");
+  const indText = $("storyIndicatorText");
+  if(appearance.label){
+    ind.classList.add("active");
+    indText.textContent = appearance.label;
+  }else{
+    ind.classList.remove("active");
+  }
+}
+
+function clearStoryAppearance(){
+  activeStoryAppearance = null;
+  activeTransitionPhase = null;
+  $("storyIndicator").classList.remove("active");
+  clearStoryOverrides();
+  setSkin(state.skin);
+}
+
+/* ---------- Transition evaluation ---------- */
+function evaluateTransitions(q){
+  if(!activeStoryAppearance?.transitions) return;
+  const trans = activeStoryAppearance.transitions;
+
+  const primDone = q.primary.filter(t=>t.done).length;
+  const primTotal = q.primary.length;
+  const sideDone = q.side.filter(t=>t.done).length;
+  const sideTotal = q.side.length;
+  const primPct = primTotal ? Math.round((primDone/primTotal)*100) : 0;
+  const sidePct = sideTotal ? Math.round((sideDone/sideTotal)*100) : 0;
+  const xp = q.progress.xp_this_quest;
+
+  // Determine which phase we're in (last matching trigger wins)
+  let matchedPhase = null;
+  let matchedKey = null;
+
+  for(const [key, phase] of Object.entries(trans)){
+    if(typeof phase !== "object" || !phase.trigger) continue;
+    const trig = phase.trigger;
+    let match = false;
+    if(trig === "primary_25" && primPct >= 25) match = true;
+    if(trig === "primary_50" && primPct >= 50) match = true;
+    if(trig === "primary_75" && primPct >= 75) match = true;
+    if(trig === "primary_100" && primPct >= 100) match = true;
+    if(trig === "side_50" && sidePct >= 50) match = true;
+    if(trig === "side_100" && sidePct >= 100) match = true;
+    if(trig === "xp_500" && xp >= 500) match = true;
+    if(trig === "xp_1000" && xp >= 1000) match = true;
+    if(match){
+      matchedPhase = phase;
+      matchedKey = key;
+    }
+  }
+
+  if(matchedKey && matchedKey !== activeTransitionPhase){
+    activeTransitionPhase = matchedKey;
+
+    // Apply transition: start from story base, then merge phase overrides
+    const baseSkin = matchedPhase.skin || activeStoryAppearance.skin || state.skin;
+    const merged = {
+      ...(activeStoryAppearance.overrides || {}),
+      ...(matchedPhase.overrides || {})
+    };
+    setSkin(baseSkin, Object.keys(merged).length ? merged : null);
+
+    // Re-apply atmosphere and fonts from base
+    if(activeStoryAppearance.atmosphere){
+      const atm = activeStoryAppearance.atmosphere;
+      const root = document.documentElement;
+      if(atm.grain != null) root.style.setProperty("--grain-opacity", atm.grain);
+      if(atm.scanlines != null) root.style.setProperty("--texture-opacity", atm.scanlines);
+      if(atm.vignette != null) root.style.setProperty("--vignette-opacity", atm.vignette);
+      if(atm.blur != null) root.style.setProperty("--panel-blur", atm.blur+"px");
+    }
+    if(activeStoryAppearance.fonts){
+      const f = activeStoryAppearance.fonts;
+      const root = document.documentElement;
+      if(f.heading) root.style.setProperty("--heading-font", f.heading);
+      if(f.display) root.style.setProperty("--display-font", f.display);
+      if(f.body) root.style.setProperty("--body-font", f.body);
+      if(f.mono) root.style.setProperty("--mono", f.mono);
+    }
+
+    // Update indicator
+    if(matchedPhase.label){
+      $("storyIndicator").classList.add("active");
+      $("storyIndicatorText").textContent = matchedPhase.label;
+    }
+
+    toast(`Phase shift: ${matchedPhase.label || matchedKey}`);
+  }
+}
+
+/* ---------- Skin strip UI ---------- */
+function buildSkinStrip(){
+  const strip = $("skinStrip");
+  strip.innerHTML = "";
+  for(const id of SKIN_IDS){
+    const dot = document.createElement("div");
+    dot.className = "skinDot";
+    dot.setAttribute("data-skin", id);
+    dot.title = `${SKINS[id].icon} ${SKINS[id].label}`;
+    dot.addEventListener("click", ()=>{
+      clearStoryAppearance();
+      setSkin(id);
+      toast(`Skin: ${SKINS[id].label}`);
+    });
+    strip.appendChild(dot);
+  }
+  updateSkinStrip();
+}
+function updateSkinStrip(){
+  document.querySelectorAll(".skinDot").forEach(d=>{
+    d.classList.toggle("active", d.getAttribute("data-skin") === state.skin);
+  });
+}
+function cycleSkin(){
+  const i = SKIN_IDS.indexOf(state.skin);
+  const next = SKIN_IDS[(i+1)%SKIN_IDS.length];
+  clearStoryAppearance();
+  setSkin(next);
+  toast(`Skin: ${SKINS[next].label}`);
+}
+
+/* ---------- Top chips ---------- */
+function updateTopChips(){
+  $("xpChip").textContent = state.xp_total;
+  $("lvlChip").textContent = state.level;
+}
+
+/* ---------- Screen switches ---------- */
+function showReveal(show){
+  $("questForm").style.display = show ? "none" : "grid";
+  $("revealBox").classList.toggle("active", !!show);
+}
+function showConsole(show){
+  $("consoleBox").classList.toggle("active", !!show);
+  $("packsBox").classList.toggle("active", !show);
+}
+
+/* ==========================================
+   QUEST GENERATOR (same rule-based core)
+   ========================================== */
+const INTERESTS = [
+  {theme:"Hidden Treat Trail", tags:["snack","walk"], hooks:[
+    "Sugar-scented winds hint at a secret stop...",
+    "A treat awaits — but only the keen-eyed can find it."
+  ], prim:[
+    "Navigate toward a promising spot.",
+    "Solve the small puzzle to unlock the next clue.",
+    "Retrieve the 'relic' (a photo, a token, or a tiny purchase)."
+  ], side:[
+    "Take a selfie at the weirdest sign you can find.",
+    "Spot something shaped like a heart.",
+    "Ask: 'What's one fun fact about this area?' (optional)"
+  ], artifacts:[
+    {type:"riddle", title:"Gate Riddle", text:"I have streets but no cars, I have rivers but no water. What am I?", answer:"map", hint:"You're looking at one right now."},
+    {type:"map", title:"Route Fragment", text:"A small map fragment appears... (add your own image later)"},
+    {type:"herring", title:"Red Herring", text:"The shiny statue is watching... but it's not your quest target."}
+  ], defaultAppearance:{skin:"cozy",label:"Sweet Recon"}},
+
+  {theme:"Mural Oracle Run", tags:["art","discover"], hooks:[
+    "Walls can speak. Find the one that sings today.",
+    "A painted secret is waiting to be noticed."
+  ], prim:[
+    "Find a mural, street art, or interesting sign.",
+    "Capture a photo and name the 'guardian' of the mural.",
+    "Leave a tiny compliment note in your journal (no vandalism)."
+  ], side:[
+    "Find 3 colors you love and call them spell names.",
+    "Collect a 'texture sample' photo (brick, bark, tile).",
+    "Spot an animal (real or drawn)."
+  ], artifacts:[
+    {type:"image", title:"Clue Sketch", text:"Look for bold shapes + big outlines. Your target 'feels' loud."},
+    {type:"riddle", title:"Color Lock", text:"I am the color of the sky's mirror. What color am I?", answer:"blue", hint:"Look up, then look down."}
+  ], defaultAppearance:{skin:"map",label:"Oracle Run",overrides:{"--accent":"#E6C87A"}}},
+
+  {theme:"Forest Shrine Circuit", tags:["nature","walk"], hooks:[
+    "The grove remembers. It wants a visitor.",
+    "A tiny shrine hides in plain sight."
+  ], prim:[
+    "Walk to a green place (park, trail, grove).",
+    "Find an 'Elder Tree' and take a respectful photo.",
+    "Return to base and declare today's 'forest rule'."
+  ], side:[
+    "Gather 3 'moon shards' (smooth stones or leaf shapes).",
+    "Listen for a bird call and mimic it (quietly).",
+    "Find something older than 50 years (tree, building, plaque)."
+  ], artifacts:[
+    {type:"map", title:"Old Map", text:"The old map shows a grove... (later: real map image)"},
+    {type:"token", title:"Golden Acorn Token", text:"Awarded when you find a tree with 'character'."}
+  ], defaultAppearance:{skin:"feral",label:"Shrine Circuit",atmosphere:{grain:0.05,vignette:0.5}}},
+
+  {theme:"Sector Data Heist", tags:["sci","mission"], hooks:[
+    "A signal spikes. The sector is unstable.",
+    "Move quiet. The console wants data."
+  ], prim:[
+    "Locate a 'terminal' (a landmark / store / sign).",
+    "Extract encrypted files (take 3 photos with secret captions).",
+    "Escape the sector (return to car / home base)."
+  ], side:[
+    "Evade the drones (walk a different route back).",
+    "Transmit a data packet (send a funny voice note).",
+    "Spot a 'glitch' (odd sign, weird object, strange pattern)."
+  ], artifacts:[
+    {type:"riddle", title:"Cipher Prompt", text:"What has a key but can't open locks?", answer:"keyboard", hint:"It types."},
+    {type:"herring", title:"False Terminal", text:"That flashy billboard is a decoy terminal."}
+  ], defaultAppearance:{skin:"sci",label:"Data Heist",transitions:{
+    midpoint:{trigger:"primary_50",overrides:{"--accent":"#FF3366","--glow1":"rgba(255,51,102,.15)"},label:"Alert: Sector Breach"},
+    finale:{trigger:"primary_100",skin:"void",label:"Extraction Complete"}
+  }}}
+];
+
+function choose(arr){return arr[Math.floor(Math.random()*arr.length)]}
+function shuffle(a){const b=a.slice();for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]]}return b}
+
+function generateQuestFromInputs(inputs, avoid={}){
+  const avoidThemes = avoid.avoidThemes || [];
+  let pool = INTERESTS.filter(x=>!avoidThemes.includes(x.theme));
+  if(pool.length===0) pool = INTERESTS.slice();
+  const base = choose(pool);
+
+  const questId = uid();
+  const title = base.theme + (inputs.vibe==="mystery" ? " — Mystery Variant" : "");
+  const hook = choose(base.hooks);
+
+  const time = inputs.time;
+  let primCount = (time==="30m")?3:(time==="60m")?3:(time==="2h")?4:5;
+  let sideCount = (time==="30m")?2:(time==="60m")?3:4;
+
+  const primary = base.prim.slice(0,primCount).map((t,i)=>mkTask(t,true,i));
+  const side = base.side.slice(0,sideCount).map((t,i)=>mkTask(t,false,i));
+
+  let artCount = (inputs.vibe==="mystery")?3:2;
+  const artifacts = shuffle(base.artifacts).slice(0,artCount).map(a=>({id:uid(),status:"unseen",...a}));
+
+  // Build appearance from base defaults
+  const appearance = base.defaultAppearance ? JSON.parse(JSON.stringify(base.defaultAppearance)) : {skin:state.skin};
+
+  return {
+    id:questId,
+    created_at:nowISO(),
+    started_at:null,
+    ended_at:null,
+    status:"proposed",
+    inputs,
+    title,
+    hook,
+    est_duration:time,
+    primary,
+    side,
+    artifacts,
+    appearance,
+    handler:null, // story JSON can provide custom handler briefing data
+    scoring:{
+      accept_xp:50, step_xp:100, side_xp:150, log_xp:75,
+      selfie_xp:200, wonka_xp:150, herring_xp:300, complete_xp:500
+    },
+    progress:{
+      current_primary_index:0,
+      xp_this_quest:0,
+      plunder_score:0,
+      memories:[]
+    }
+  };
+}
+function mkTask(text,primary,i){
+  return {id:uid(),text,primary,idx:i,done:false,xp:primary?100:150};
+}
+
+/* ---------- AI hook (stubbed) ---------- */
+async function maybeGenerateQuestAI(inputs,avoid){
+  const AI_ENDPOINT="";
+  if(!AI_ENDPOINT)return null;
+  const payload={inputs,avoid,interests:INTERESTS.map(x=>({theme:x.theme,tags:x.tags}))};
+  const res=await fetch(AI_ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+  if(!res.ok)throw new Error("AI endpoint failed");
+  return await res.json();
+}
+
+/* ---------- UI Rendering ---------- */
+let proposedQuest = null;
+
+function renderReveal(q){
+  $("rTitle").textContent = q.title;
+  $("rHook").textContent = q.hook;
+
+  const meta = $("rMeta");
+  meta.innerHTML = "";
+  meta.appendChild(pill(`TIME: ${q.inputs.time}`));
+  meta.appendChild(pill(`WEATHER: ${q.inputs.weather}`));
+  meta.appendChild(pill(`VIBE: ${q.inputs.vibe}`));
+  meta.appendChild(pill(`RANGE: ${q.inputs.range}`));
+  if(q.inputs.where) meta.appendChild(pill(`WHERE: ${q.inputs.where}`));
+  if(q.appearance?.label) meta.appendChild(pill(`THEME: ${q.appearance.label}`));
+
+  $("rPrimary").innerHTML = q.primary.map(t=>`<li>${escapeHtml(t.text)}</li>`).join("");
+  $("rSide").innerHTML = q.side.map(t=>`<li>${escapeHtml(t.text)}</li>`).join("");
+  $("rArtifactsHint").textContent = `Artifacts detected: ${q.artifacts.length}`;
+}
+
+function renderConsole(q){
+  $("cTitle").textContent = q.title;
+  const party = q.inputs.party?.trim() ? q.inputs.party.trim() : "You + Kid";
+  const startLine = q.started_at ? fmtDT(q.started_at) : "—";
+  $("cLine1").textContent = `ACTIVE QUEST · ${party}`;
+  $("cLine2").textContent = `Started: ${startLine} · Weather: ${q.inputs.weather} · Vibe: ${q.inputs.vibe}`;
+
+  $("cScoreLine").textContent = `PLUNDER SCORE: ${q.progress.plunder_score}`;
+  $("cXpLine").textContent = `XP this quest: ${q.progress.xp_this_quest}`;
+
+  const primDone = q.primary.filter(t=>t.done).length;
+  const primTotal = q.primary.length;
+  const sideDone = q.side.filter(t=>t.done).length;
+  const sideTotal = q.side.length;
+
+  $("cProgBar").style.width = (primTotal?Math.round((primDone/primTotal)*100):0)+"%";
+  $("cSideBar").style.width = (sideTotal?Math.round((sideDone/sideTotal)*100):0)+"%";
+
+  const unseen = q.artifacts.filter(a=>a.status==="unseen").length;
+  $("cArtifactsSub").textContent = unseen
+    ? `${unseen} unseen artifact(s) in the vault.`
+    : `All artifacts have been seen.`;
+
+  $("cPrimaryList").innerHTML = "";
+  $("cSideList").innerHTML = "";
+  q.primary.forEach(t=>$("cPrimaryList").appendChild(taskRow(t,q)));
+  q.side.forEach(t=>$("cSideList").appendChild(taskRow(t,q)));
+
+  // Check transitions
+  evaluateTransitions(q);
+}
+
+function taskRow(t,q){
+  const wrap=document.createElement("div");wrap.className="task";
+  const cb=document.createElement("input");cb.type="checkbox";cb.checked=!!t.done;
+  cb.addEventListener("change",()=>{
+    t.done=cb.checked;
+    if(t.done)awardForTask(t,q);
+    else toast("Unchecked (no XP rollback).");
+    persistActiveQuest();renderConsole(q);
+  });
+  const txt=document.createElement("div");txt.className="txt";
+  const line=document.createElement("div");line.className="line";line.textContent=t.text;
+  const sub=document.createElement("div");sub.className="sub";
+  const xpBadge=document.createElement("span");
+  xpBadge.className="badge "+(t.primary?"warn":"good");
+  xpBadge.textContent=`+${t.xp} XP`;
+  sub.appendChild(xpBadge);
+  const logBtn=document.createElement("button");logBtn.className="ghost";
+  logBtn.style.padding="8px 10px";logBtn.style.borderRadius="12px";
+  logBtn.textContent="LOG MOMENT";
+  logBtn.addEventListener("click",()=>openLogModal(q,{tag:"step",stepId:t.id}));
+  sub.appendChild(logBtn);
+  txt.appendChild(line);txt.appendChild(sub);
+  wrap.appendChild(cb);wrap.appendChild(txt);
+  return wrap;
+}
+
+function awardForTask(t,q){
+  q.progress.xp_this_quest+=t.xp;
+  q.progress.plunder_score+=(t.primary?250:350);
+  addXP(t.xp,t.primary?"Primary step":"Side quest");
+}
+
+/* ---------- Artifacts modal ---------- */
+function openArtifacts(q){
+  $("modalTitle").textContent="Artifact Vault";
+  const mc=$("modalContent");mc.innerHTML="";
+
+  q.artifacts.forEach(a=>{
+    const c=document.createElement("div");c.className="artifactCard";
+    const h=document.createElement("h4");h.textContent=`${a.type.toUpperCase()} · ${a.title||"Artifact"}`;c.appendChild(h);
+    const p=document.createElement("p");p.textContent=a.text||"";c.appendChild(p);
+
+    if(a.type==="riddle"){
+      const row=document.createElement("div");row.className="row";row.style.marginTop="10px";
+      const ans=document.createElement("input");ans.placeholder="Answer...";ans.style.flex="1";
+      const check=document.createElement("button");check.className="primary";check.textContent="CHECK";
+      check.addEventListener("click",()=>{
+        const guess=(ans.value||"").trim().toLowerCase();
+        if(guess&&guess===(a.answer||"").trim().toLowerCase()){
+          toast("Riddle solved!");a.status="completed";q.progress.plunder_score+=500;
+          addXP(200,"Riddle solved");persistActiveQuest();renderConsole(q);
+        }else toast("Not quite...");
+      });
+      const hint=document.createElement("button");hint.textContent="HINT (-50 XP)";
+      hint.addEventListener("click",()=>{
+        if(q.progress.xp_this_quest<50){toast("Need more quest XP.");return}
+        q.progress.xp_this_quest=Math.max(0,q.progress.xp_this_quest-50);
+        q.progress.plunder_score=Math.max(0,q.progress.plunder_score-50);
+        toast(a.hint?`Hint: ${a.hint}`:"No hint stored.");
+        persistActiveQuest();renderConsole(q);
+      });
+      row.appendChild(ans);row.appendChild(check);row.appendChild(hint);c.appendChild(row);
+    }
+    if(a.type==="map"){
+      const img=document.createElement("img");img.alt="Map artifact";
+      img.src=a.image_data_url||makePlaceholderMapDataURL();c.appendChild(img);
+      const row=document.createElement("div");row.className="row";row.style.marginTop="10px";
+      const nav=document.createElement("button");nav.className="good";nav.textContent="NAVIGATE";
+      nav.addEventListener("click",()=>{
+        const qstr=encodeURIComponent(q.inputs.where||"near me");
+        window.open(`https://www.google.com/maps/search/?api=1&query=${qstr}`,"_blank");
+      });
+      const mark=document.createElement("button");mark.textContent="MARK SEEN";
+      mark.addEventListener("click",()=>{a.status="seen";toast("Map marked seen.");persistActiveQuest();renderConsole(q)});
+      row.appendChild(nav);row.appendChild(mark);c.appendChild(row);
+    }
+    if(a.type==="image"){
+      const img=document.createElement("img");img.alt="Clue image";
+      img.src=a.image_data_url||makePlaceholderClueDataURL();c.appendChild(img);
+      const row=document.createElement("div");row.className="row";row.style.marginTop="10px";
+      const seen=document.createElement("button");seen.textContent="MARK SEEN";
+      seen.addEventListener("click",()=>{a.status="seen";toast("Clue marked seen.");persistActiveQuest();renderConsole(q)});
+      row.appendChild(seen);c.appendChild(row);
+    }
+    if(a.type==="herring"){
+      const row=document.createElement("div");row.className="row";row.style.marginTop="10px";
+      const spotted=document.createElement("button");spotted.className="primary";spotted.textContent="FLAG RED HERRING";
+      spotted.addEventListener("click",()=>{
+        if(a.status==="completed"){toast("Already flagged.");return}
+        a.status="completed";q.progress.plunder_score+=600;
+        addXP(q.scoring.herring_xp,"Red herring spotted");persistActiveQuest();renderConsole(q);
+      });
+      row.appendChild(spotted);c.appendChild(row);
+    }
+    if(a.type==="token"){
+      const row=document.createElement("div");row.className="row";row.style.marginTop="10px";
+      const claim=document.createElement("button");claim.className="good";claim.textContent="CLAIM TOKEN";
+      claim.addEventListener("click",()=>{
+        if(a.status==="completed"){toast("Token already claimed.");return}
+        a.status="completed";q.progress.plunder_score+=400;
+        addXP(150,"Token claimed");persistActiveQuest();renderConsole(q);
+      });
+      row.appendChild(claim);c.appendChild(row);
+    }
+    if(a.status==="unseen")a.status="seen";
+    mc.appendChild(c);
+  });
+  openModal();
+}
+
+/* ---------- Log modal ---------- */
+function openLogModal(q,opts={}){
+  $("modalTitle").textContent="Log a Memory";
+  const mc=$("modalContent");mc.innerHTML="";
+  const c=document.createElement("div");c.className="artifactCard";
+  const h=document.createElement("h4");h.textContent="10-second capture";c.appendChild(h);
+  const p=document.createElement("p");
+  p.textContent="Pick one: photo, voice, quote, or quick tag. (Everything becomes part of the Adventure Pack.)";c.appendChild(p);
+
+  const row1=document.createElement("div");row1.className="row";row1.style.marginTop="10px";
+
+  const photo=document.createElement("button");photo.className="primary";photo.textContent="PHOTO";
+  photo.addEventListener("click",async()=>{
+    const file=await pickFile("image/*",true);if(!file)return;
+    const rec=await putBlob(file);
+    q.progress.memories.push({id:uid(),t:nowISO(),kind:"photo",blob_id:rec.id,mime:rec.type,note:"",tags:[opts.tag||"memory"]});
+    q.progress.plunder_score+=120;q.progress.xp_this_quest+=q.scoring.log_xp;
+    addXP(q.scoring.log_xp,"Memory logged");persistActiveQuest();toast("Photo logged.");closeModal();renderConsole(q);
+  });
+
+  const voice=document.createElement("button");voice.textContent="VOICE (FILE)";
+  voice.addEventListener("click",async()=>{
+    const file=await pickFile("audio/*",true);if(!file)return;
+    const rec=await putBlob(file);
+    q.progress.memories.push({id:uid(),t:nowISO(),kind:"audio",blob_id:rec.id,mime:rec.type,note:"",tags:[opts.tag||"memory"]});
+    q.progress.plunder_score+=140;q.progress.xp_this_quest+=q.scoring.log_xp;
+    addXP(q.scoring.log_xp,"Memory logged");persistActiveQuest();toast("Voice logged.");closeModal();renderConsole(q);
+  });
+
+  const quote=document.createElement("button");quote.textContent="QUOTE";
+  quote.addEventListener("click",()=>{
+    const txt=prompt("Quote of the moment:");if(!txt)return;
+    q.progress.memories.push({id:uid(),t:nowISO(),kind:"quote",text:txt.slice(0,400),tags:[opts.tag||"memory"]});
+    q.progress.plunder_score+=90;q.progress.xp_this_quest+=q.scoring.log_xp;
+    addXP(q.scoring.log_xp,"Memory logged");persistActiveQuest();toast("Quote logged.");closeModal();renderConsole(q);
+  });
+
+  const tag=document.createElement("button");tag.textContent="TAGS";
+  tag.addEventListener("click",()=>{
+    const choice=prompt("Type tags, comma-separated:\nwonka-zone, selfie, kindness, discovery, snack, nature, glitch");
+    if(!choice)return;
+    const tags=choice.split(",").map(s=>s.trim()).filter(Boolean).slice(0,12);
+    q.progress.memories.push({id:uid(),t:nowISO(),kind:"tags",tags});
+    if(tags.includes("selfie")){q.progress.plunder_score+=250;q.progress.xp_this_quest+=q.scoring.selfie_xp;addXP(q.scoring.selfie_xp,"Selfie bonus")}
+    if(tags.includes("wonka-zone")){q.progress.plunder_score+=180;q.progress.xp_this_quest+=q.scoring.wonka_xp;addXP(q.scoring.wonka_xp,"Wonka zone flagged")}
+    q.progress.plunder_score+=60;q.progress.xp_this_quest+=q.scoring.log_xp;
+    addXP(q.scoring.log_xp,"Memory logged");persistActiveQuest();toast("Tags logged.");closeModal();renderConsole(q);
+  });
+
+  row1.appendChild(photo);row1.appendChild(voice);row1.appendChild(quote);row1.appendChild(tag);c.appendChild(row1);
+
+  const note=document.createElement("textarea");note.placeholder="Optional: 1 sentence about what happened...";note.style.marginTop="10px";c.appendChild(note);
+  const row2=document.createElement("div");row2.className="row";row2.style.marginTop="10px";row2.style.justifyContent="flex-end";
+  const saveNote=document.createElement("button");saveNote.className="good";saveNote.textContent="SAVE NOTE";
+  saveNote.addEventListener("click",()=>{
+    const txt=(note.value||"").trim();if(!txt){toast("No note entered.");return}
+    q.progress.memories.push({id:uid(),t:nowISO(),kind:"note",text:txt.slice(0,700),tags:[opts.tag||"memory"]});
+    q.progress.plunder_score+=70;q.progress.xp_this_quest+=q.scoring.log_xp;
+    addXP(q.scoring.log_xp,"Memory logged");persistActiveQuest();toast("Note logged.");closeModal();renderConsole(q);
+  });
+  row2.appendChild(saveNote);c.appendChild(row2);mc.appendChild(c);openModal();
+}
+
+/* ---------- Modal helpers ---------- */
+function openModal(){$("modalBack").classList.add("active");$("modalBack").setAttribute("aria-hidden","false")}
+function closeModal(){$("modalBack").classList.remove("active");$("modalBack").setAttribute("aria-hidden","true")}
+
+function pickFile(accept,capture=false){
+  return new Promise(resolve=>{
+    const inp=document.createElement("input");inp.type="file";inp.accept=accept||"*/*";
+    if(capture)inp.capture="environment";
+    inp.onchange=()=>resolve(inp.files&&inp.files[0]?inp.files[0]:null);inp.click();
+  });
+}
+
+function persistActiveQuest(){saveState()}
+
+/* ---------- Complete quest ---------- */
+function completeQuest(q){
+  q.status="completed";q.ended_at=nowISO();
+  const allPrimDone=q.primary.every(t=>t.done);
+  if(allPrimDone){q.progress.plunder_score+=1000;q.progress.xp_this_quest+=q.scoring.complete_xp;addXP(q.scoring.complete_xp,"Quest complete")}
+  else{q.progress.plunder_score+=300;addXP(150,"Quest ended (partial)")}
+
+  const pack={
+    id:uid(),quest_id:q.id,title:q.title,created_at:nowISO(),
+    started_at:q.started_at,ended_at:q.ended_at,inputs:q.inputs,hook:q.hook,
+    appearance:q.appearance||null,
+    stats:{plunder_score:q.progress.plunder_score,xp_this_quest:q.progress.xp_this_quest,
+      primary_done:q.primary.filter(t=>t.done).length,primary_total:q.primary.length,
+      side_done:q.side.filter(t=>t.done).length,side_total:q.side.length,
+      memories:q.progress.memories.length},
+    primary:q.primary,side:q.side,artifacts:q.artifacts,memories:q.progress.memories
+  };
+
+  state.packs.unshift(pack);state.activeQuest=null;
+  clearStoryAppearance();
+  saveState();renderPacks();showConsole(false);toast("Adventure Pack created.");
+}
+
+/* ---------- Packs ---------- */
+function renderPacks(){
+  const list=$("packList");list.innerHTML="";
+  if(!state.packs.length){
+    const empty=document.createElement("div");empty.className="hint";
+    empty.textContent="No packs yet. Summon a quest and complete it to generate your first Adventure Pack.";
+    list.appendChild(empty);return;
+  }
+  state.packs.forEach(pack=>{
+    const item=document.createElement("div");item.className="packItem";
+    const left=document.createElement("div");left.className="left";
+    const b=document.createElement("b");b.textContent="Adventure Pack";
+    const name=document.createElement("p");name.className="name";name.textContent=pack.title;
+    const meta=document.createElement("div");meta.className="meta";
+    meta.textContent=`${fmtDT(pack.started_at||pack.created_at)} · Score ${pack.stats.plunder_score} · Memories ${pack.stats.memories}`;
+    left.appendChild(b);left.appendChild(name);left.appendChild(meta);
+
+    const right=document.createElement("div");right.className="right";
+    const view=document.createElement("button");view.className="primary";view.textContent="VIEW";
+    view.addEventListener("click",()=>viewPack(pack));
+    const exp=document.createElement("button");exp.textContent="EXPORT JSON";
+    exp.addEventListener("click",()=>exportJSON(pack,`adventure_pack_${slug(pack.title)}.json`));
+    const del=document.createElement("button");del.className="danger";del.textContent="DELETE";
+    del.addEventListener("click",()=>{
+      if(!confirm("Delete this pack?"))return;
+      state.packs=state.packs.filter(p=>p.id!==pack.id);saveState();renderPacks();toast("Pack deleted.");
+    });
+    right.appendChild(view);right.appendChild(exp);right.appendChild(del);
+    item.appendChild(left);item.appendChild(right);list.appendChild(item);
+  });
+}
+
+function viewPack(pack){
+  $("modalTitle").textContent="Adventure Pack";
+  const mc=$("modalContent");mc.innerHTML="";
+  const card=document.createElement("div");card.className="artifactCard";
+  card.innerHTML=`<h4>${escapeHtml(pack.title)}</h4><p class="muted">Started: ${escapeHtml(fmtDT(pack.started_at||pack.created_at))}<br/>Score: ${pack.stats.plunder_score} · XP: ${pack.stats.xp_this_quest} · Memories: ${pack.stats.memories}</p>`;
+  mc.appendChild(card);
+
+  const steps=document.createElement("div");steps.className="artifactCard";
+  steps.innerHTML=`<h4>Steps & Side Quests</h4>`;
+  const p1=document.createElement("p");
+  p1.innerHTML=`<b class="muted">Primary</b><br/>`+pack.primary.map(t=>`${t.done?"✅":"⬜"} ${escapeHtml(t.text)}`).join("<br/>");
+  const p2=document.createElement("p");p2.style.marginTop="10px";
+  p2.innerHTML=`<b class="muted">Side</b><br/>`+pack.side.map(t=>`${t.done?"✅":"⬜"} ${escapeHtml(t.text)}`).join("<br/>");
+  steps.appendChild(p1);steps.appendChild(p2);mc.appendChild(steps);
+
+  const mem=document.createElement("div");mem.className="artifactCard";mem.innerHTML=`<h4>Memories</h4>`;
+  if(!pack.memories.length){
+    const mp=document.createElement("p");mp.textContent="No memories logged for this pack.";mem.appendChild(mp);
+  }else{
+    pack.memories.forEach(m=>{
+      const line=document.createElement("div");
+      line.style.cssText="margin-bottom:10px;padding:10px;border:1px solid rgba(255,255,255,.10);border-radius:14px;background:rgba(0,0,0,.14)";
+      const head=document.createElement("div");head.className="muted";
+      head.style.cssText="font-family:var(--mono);font-size:12px";
+      head.textContent=`${new Date(m.t).toLocaleString()} · ${m.kind.toUpperCase()}`;line.appendChild(head);
+      if(m.kind==="quote"||m.kind==="note"){
+        const t=document.createElement("div");t.style.cssText="margin-top:6px;font-family:var(--mono);font-size:13px";
+        t.textContent=m.text;line.appendChild(t);
+      }else if(m.kind==="tags"){
+        const t=document.createElement("div");t.style.cssText="margin-top:6px;font-family:var(--mono);font-size:13px";
+        t.textContent="Tags: "+(m.tags||[]).join(", ");line.appendChild(t);
+      }else if(m.kind==="photo"||m.kind==="audio"){
+        const btn=document.createElement("button");btn.className="primary";btn.style.marginTop="8px";
+        btn.textContent=m.kind==="photo"?"VIEW PHOTO":"PLAY AUDIO";
+        btn.addEventListener("click",async()=>{
+          const rec=await getBlob(m.blob_id);if(!rec){toast("Media missing.");return}
+          if(m.kind==="photo"){
+            const url=URL.createObjectURL(rec.blob);const img=document.createElement("img");
+            img.src=url;img.alt="Memory photo";img.style.marginTop="10px";
+            img.onload=()=>setTimeout(()=>URL.revokeObjectURL(url),1000);line.appendChild(img);
+          }else{
+            const url=URL.createObjectURL(rec.blob);const audio=document.createElement("audio");
+            audio.controls=true;audio.src=url;audio.style.cssText="width:100%;margin-top:10px";
+            audio.onended=()=>setTimeout(()=>URL.revokeObjectURL(url),1000);line.appendChild(audio);
+          }
+        });
+        line.appendChild(btn);
+      }
+      mem.appendChild(line);
+    });
+  }
+  mc.appendChild(mem);openModal();
+}
+
+/* ---------- Show schema in modal ---------- */
+function showSchema(){
+  $("modalTitle").textContent="Appearance Schema";
+  const mc=$("modalContent");mc.innerHTML="";
+  const card=document.createElement("div");card.className="artifactCard";
+  const h=document.createElement("h4");h.textContent="quest-console-appearance-v1";card.appendChild(h);
+  const pre=document.createElement("pre");
+  pre.style.cssText="margin:0;white-space:pre-wrap;word-break:break-all;font-family:var(--mono);font-size:12px;line-height:1.5;color:var(--text);max-height:60vh;overflow:auto";
+  pre.textContent=JSON.stringify({...APPEARANCE_SCHEMA,handler_schema:{
+    name:"string — speaker label (default 'The Handler')",
+    lines:["string[] — dialogue lines played via typewriter"],
+    audio_url:"string — optional URL to audio file for briefing playback",
+    type_speed:"number — ms per character (default 35)",
+    auto_advance:"boolean — auto-advance or tap-to-continue (default false)",
+    auto_advance_delay:"number — ms between auto lines (default 1400)"
+  }},null,2);
+  card.appendChild(pre);
+  const row=document.createElement("div");row.className="row";row.style.marginTop="10px";
+  const copy=document.createElement("button");copy.className="primary";copy.textContent="COPY JSON";
+  copy.addEventListener("click",()=>{
+    navigator.clipboard?.writeText(JSON.stringify(APPEARANCE_SCHEMA,null,2)).then(()=>toast("Schema copied.")).catch(()=>toast("Copy failed."));
+  });
+  const dl=document.createElement("button");dl.textContent="DOWNLOAD";
+  dl.addEventListener("click",()=>exportJSON(APPEARANCE_SCHEMA,"quest_appearance_schema.json"));
+  row.appendChild(copy);row.appendChild(dl);card.appendChild(row);mc.appendChild(card);openModal();
+}
+
+/* ===================================================
+   HANDLER BRIEFING SYSTEM
+   =================================================== */
+
+/* Particle system */
+let particleCtx=null;let particleRAF=null;let particles=[];
+function initParticles(){
+  const c=$("handlerParticles");c.width=window.innerWidth;c.height=window.innerHeight;
+  particleCtx=c.getContext("2d");particles=[];
+  for(let i=0;i<60;i++){
+    particles.push({x:Math.random()*c.width,y:Math.random()*c.height,
+      vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)*.3-.1,
+      r:Math.random()*1.5+.5,a:Math.random()*.3+.1,life:Math.random()*400+200});
+  }
+  drawParticles();
+}
+function drawParticles(){
+  if(!particleCtx)return;const c=$("handlerParticles");
+  particleCtx.clearRect(0,0,c.width,c.height);
+  const accentHex=getComputedStyle(document.documentElement).getPropertyValue("--accent").trim()||"#74D6FF";
+  particles.forEach(p=>{
+    p.x+=p.vx;p.y+=p.vy;p.life--;
+    if(p.life<=0||p.y<-10||p.x<-10||p.x>c.width+10){p.x=Math.random()*c.width;p.y=c.height+10;p.life=Math.random()*400+200;p.a=Math.random()*.3+.1}
+    particleCtx.beginPath();particleCtx.arc(p.x,p.y,p.r,0,Math.PI*2);
+    particleCtx.fillStyle=accentHex;particleCtx.globalAlpha=p.a;particleCtx.fill();
+  });
+  particleCtx.globalAlpha=1;particleRAF=requestAnimationFrame(drawParticles);
+}
+function stopParticles(){if(particleRAF)cancelAnimationFrame(particleRAF);particleRAF=null;particleCtx=null}
+
+/* Typewriter engine */
+let typeTimer=null;let typeDoneResolve=null;
+function typeText(el,text,speed=35){
+  return new Promise(resolve=>{
+    typeDoneResolve=resolve;el.innerHTML='';let i=0;
+    const cursor=document.createElement("span");cursor.className="cursor";
+    function tick(){
+      if(i<text.length){
+        if(text[i]==='\n')el.appendChild(document.createElement("br"));
+        else el.appendChild(document.createTextNode(text[i]));
+        i++;if(cursor.parentNode)cursor.remove();el.appendChild(cursor);
+        let delay=speed;const ch=text[i-1];
+        if('.!?'.includes(ch))delay=speed*6;
+        else if(',;:'.includes(ch))delay=speed*3;
+        else if(ch==='—'||ch==='…')delay=speed*4;
+        typeTimer=setTimeout(tick,delay);
+      }else{if(cursor.parentNode)cursor.remove();resolve()}
+    }
+    tick();
+  });
+}
+function skipTypewriter(){if(typeTimer){clearTimeout(typeTimer);typeTimer=null}if(typeDoneResolve)typeDoneResolve()}
+
+/* Briefing controller */
+let briefingActive=false;let briefingAborted=false;let currentBriefingQuest=null;
+
+const DEFAULT_HANDLER_LINES={
+  "Hidden Treat Trail":["Agent… I've intercepted something interesting.","A signal — faint, sweet, almost like sugar on the wind.","Your mission: follow the trail. Find the source. Bring back proof.","Don't get distracted by the obvious. The real treasure hides."],
+  "Mural Oracle Run":["The walls are speaking again.","We've detected anomalous patterns — colors that shouldn't be there, shapes that tell stories.","Your task: find the one that sings. Document it. Name its guardian.","Trust your eyes. The oracle reveals itself to those who look."],
+  "Forest Shrine Circuit":["The grove remembers, agent.","Something ancient stirs among the roots — a shrine, hidden in plain sight.","Walk softly. Find the Elder. Pay your respects.","Return with a forest rule. The canopy decides who is worthy."],
+  "Sector Data Heist":["Listen carefully. We don't have much time.","A rogue signal is pulsing from the sector. Encrypted. Unstable.","You will locate the terminal. Extract the data. Three files, minimum.","If you see drones — change your route. This channel goes dark in thirty seconds."]
+};
+
+function getHandlerData(q){
+  if(q.handler)return q.handler;
+  const baseTheme=q.title.split(" — ")[0];
+  const lines=DEFAULT_HANDLER_LINES[baseTheme]||["Agent… a new objective has surfaced.","The details are in your briefing. Study them carefully.","Complete the primary objectives. Side tasks are optional but… rewarded.","Good luck out there."];
+  return{name:"The Handler",lines,audio_url:"",type_speed:30,auto_advance:false,auto_advance_delay:1400};
+}
+
+async function startBriefing(quest){
+  currentBriefingQuest=quest;briefingActive=true;briefingAborted=false;
+  const handler=getHandlerData(quest);
+  const overlay=$("handlerOverlay");const speaker=$("handlerSpeaker");
+  const textEl=$("handlerText");const progress=$("handlerProgress");
+  const audioEl=$("handlerAudio");const audioInd=$("handlerAudioInd");
+
+  if(quest.appearance)applyStoryAppearance(quest.appearance);
+
+  speaker.textContent=handler.name||"The Handler";
+  textEl.innerHTML='<span class="cursor"></span>';
+
+  progress.innerHTML="";
+  handler.lines.forEach(()=>{const d=document.createElement("div");d.className="dot";progress.appendChild(d)});
+
+  overlay.classList.add("active");
+  await sleep(100);overlay.classList.add("playing");
+  initParticles();
+
+  let audioPlaying=false;
+  if(handler.audio_url){
+    try{audioEl.src=handler.audio_url;audioEl.volume=0.6;await audioEl.play();audioPlaying=true;audioInd.classList.add("active")}catch(e){console.warn("Audio failed:",e)}
+  }
+
+  const speed=handler.type_speed||35;
+  const autoAdv=handler.auto_advance!==false;
+  const autoDelay=handler.auto_advance_delay||1400;
+
+  for(let i=0;i<handler.lines.length;i++){
+    if(briefingAborted)break;
+    progress.querySelectorAll(".dot").forEach((d,j)=>{d.className="dot"+(j<i?" done":j===i?" current":"")});
+    await typeText(textEl,handler.lines[i],speed);
+    if(briefingAborted)break;
+    const dots=progress.querySelectorAll(".dot");if(dots[i])dots[i].className="dot done";
+    if(i<handler.lines.length-1){
+      if(autoAdv)await sleep(autoDelay);else await waitForTap();
+    }
+  }
+  if(!briefingAborted)await sleep(800);
+
+  if(audioPlaying){audioEl.pause();audioEl.currentTime=0;audioInd.classList.remove("active")}
+  stopParticles();overlay.classList.remove("playing");
+  await playWipeTransition();
+  overlay.classList.remove("active");briefingActive=false;
+
+  if(!briefingAborted){renderReveal(currentBriefingQuest);showReveal(true)}
+}
+
+function abortBriefing(){briefingAborted=true;skipTypewriter();if(tapResolve)tapResolve()}
+
+let tapResolve=null;
+function waitForTap(){return new Promise(resolve=>{tapResolve=resolve})}
+function handleTapContinue(){
+  if(tapResolve){tapResolve();tapResolve=null}
+  else skipTypewriter();
+}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
+
+async function playWipeTransition(){
+  const wipe=$("briefingWipe");const blade=$("wipeBlade");const flash=$("wipeFlash");
+  wipe.classList.add("active");blade.classList.remove("go");flash.classList.remove("go");
+  void blade.offsetWidth;
+  blade.classList.add("go");flash.classList.add("go");
+  await sleep(700);
+  blade.classList.remove("go");flash.classList.remove("go");wipe.classList.remove("active");
+}
+
+/* ---------- Nav flows ---------- */
+function trekNext(q){
+  const idx=q.primary.findIndex(t=>!t.done);
+  if(idx===-1){toast("Primary objectives complete. Finish or do side quests.");return}
+  q.progress.current_primary_index=idx;
+  toast(`Room ${idx+1}: ${q.primary[idx].text}`);persistActiveQuest();renderConsole(q);
+}
+function openMap(q){
+  const mapArt=q.artifacts.find(a=>a.type==="map");
+  if(mapArt){openArtifacts(q);return}
+  const qstr=encodeURIComponent(q.inputs.where||"near me");
+  window.open(`https://www.google.com/maps/search/?api=1&query=${qstr}`,"_blank");
+}
+
+async function summon(){
+  const inputs={
+    time:$("fTime").value,weather:$("fWeather").value,vibe:$("fVibe").value,
+    range:$("fRange").value,where:($("fWhere").value||"").trim(),
+    constraints:($("fConstraints").value||"").trim(),party:($("fParty").value||"").trim()
+  };
+  const avoid={avoidThemes:state.packs.slice(0,6).map(p=>p.title.split(" — ")[0])};
+  let q=null;
+  try{q=await maybeGenerateQuestAI(inputs,avoid)}catch(e){q=null}
+  if(!q)q=generateQuestFromInputs(inputs,avoid);
+
+  proposedQuest=q;
+
+  // Launch Handler Briefing cinematic → then reveal
+  await startBriefing(q);
+}
+
+function accept(){
+  if(!proposedQuest)return;
+  const q=proposedQuest;q.status="active";q.started_at=nowISO();
+  state.activeQuest=q;proposedQuest=null;
+
+  q.progress.xp_this_quest+=q.scoring.accept_xp;q.progress.plunder_score+=100;
+  addXP(q.scoring.accept_xp,"Quest accepted");
+
+  // Apply story appearance officially
+  if(q.appearance) applyStoryAppearance(q.appearance);
+
+  saveState();renderConsole(state.activeQuest);showConsole(true);showReveal(false);
+}
+
+function pass(){
+  if(!proposedQuest)return;
+  const theme=proposedQuest.title.split(" — ")[0];
+  const inputs=proposedQuest.inputs;
+  const avoid={avoidThemes:[theme,...state.packs.slice(0,6).map(p=>p.title.split(" — ")[0])]};
+  proposedQuest=generateQuestFromInputs(inputs,avoid);
+
+  // Preview new quest's appearance
+  if(proposedQuest.appearance) applyStoryAppearance(proposedQuest.appearance);
+
+  renderReveal(proposedQuest);toast("Re-rolled quest.");
+}
+
+function exitQuest(){
+  const q=state.activeQuest;if(!q)return;
+  const choice=prompt("Type one:\nCOMPLETE\nPAUSE\nABANDON","PAUSE");
+  if(!choice)return;
+  const c=choice.trim().toLowerCase();
+  if(c==="pause"){
+    q.status="paused";state.activeQuest=q;saveState();showConsole(false);renderPacks();toast("Quest paused.");
+  }else if(c==="abandon"){
+    if(!confirm("Abandon quest?"))return;
+    state.activeQuest=null;clearStoryAppearance();saveState();showConsole(false);renderPacks();toast("Quest abandoned.");
+  }else if(c==="complete"){
+    completeQuest(q);
+  }else toast("Unknown command.");
+}
+
+function resetAll(){
+  if(!confirm("Reset all local data (xp, packs, active quest)?"))return;
+  localStorage.removeItem(APP_KEY);state=defaultState();
+  clearStoryAppearance();setSkin("sci");proposedQuest=null;
+  saveState();renderPacks();showReveal(false);showConsole(false);toast("Reset complete.");
+}
+
+/* ---------- Helpers ---------- */
+function pill(text){const d=document.createElement("div");d.className="pill";d.textContent=text;return d}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
+function slug(s){return String(s).toLowerCase().replace(/[^a-z0-9]+/g,"_").replace(/^_+|_+$/g,"").slice(0,60)}
+function exportJSON(obj,filename){
+  const blob=new Blob([JSON.stringify(obj,null,2)],{type:"application/json"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=filename;
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);toast("Exported JSON.");
+}
+
+function makePlaceholderMapDataURL(){
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="900" height="520"><defs><linearGradient id="g" x1="0" x2="1"><stop offset="0" stop-color="rgba(116,214,255,0.35)"/><stop offset="1" stop-color="rgba(180,140,255,0.35)"/></linearGradient></defs><rect width="100%" height="100%" fill="rgba(0,0,0,0.35)"/><rect x="18" y="18" width="864" height="484" rx="26" fill="url(#g)" opacity="0.25" stroke="rgba(255,255,255,0.18)"/><path d="M120 410 C240 260, 380 280, 520 180 S780 160, 820 120" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="10" stroke-linecap="round"/><circle cx="820" cy="120" r="18" fill="rgba(255,77,109,0.85)"/><circle cx="120" cy="410" r="18" fill="rgba(88,242,157,0.85)"/><text x="60" y="90" fill="rgba(255,255,255,0.70)" font-family="monospace" font-size="26">ARTIFACT MAP FRAGMENT</text><text x="60" y="125" fill="rgba(255,255,255,0.55)" font-family="monospace" font-size="18">Replace with a real screenshot / image later.</text></svg>`;
+  return "data:image/svg+xml;charset=utf-8,"+encodeURIComponent(svg);
+}
+function makePlaceholderClueDataURL(){
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="900" height="520"><rect width="100%" height="100%" fill="rgba(0,0,0,0.35)"/><rect x="18" y="18" width="864" height="484" rx="26" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.18)"/><circle cx="300" cy="260" r="120" fill="rgba(116,214,255,0.18)" stroke="rgba(116,214,255,0.55)" stroke-width="8"/><rect x="470" y="150" width="320" height="220" rx="22" fill="rgba(180,140,255,0.18)" stroke="rgba(180,140,255,0.55)" stroke-width="8"/><text x="60" y="90" fill="rgba(255,255,255,0.70)" font-family="monospace" font-size="26">CLUE IMAGE PLACEHOLDER</text><text x="60" y="125" fill="rgba(255,255,255,0.55)" font-family="monospace" font-size="18">Swap with a real photo clue later.</text></svg>`;
+  return "data:image/svg+xml;charset=utf-8,"+encodeURIComponent(svg);
+}
+
+/* ---------- Telegram WebApp ---------- */
+function initTelegram(){
+  const tg=window.Telegram?.WebApp;if(!tg)return;
+  try{tg.ready();$("subline").textContent=`Telegram WebApp · ${tg.platform||"web"}`}catch(e){}
+}
+
+/* ---------- Boot ---------- */
+function boot(){
+  initTelegram();
+  buildSkinStrip();
+  setSkin(state.skin||"sci");
+  updateTopChips();
+  renderPacks();
+
+  if(state.activeQuest&&state.activeQuest.status!=="completed"){
+    // Re-apply story appearance if quest has one
+    if(state.activeQuest.appearance) applyStoryAppearance(state.activeQuest.appearance);
+    renderConsole(state.activeQuest);
+    showConsole(true);
+  }else{
+    showConsole(false);
+  }
+
+  // Wire buttons
+  $("btnSummon").addEventListener("click",summon);
+  $("btnPass").addEventListener("click",pass);
+  $("btnAccept").addEventListener("click",accept);
+  $("btnArtifacts").addEventListener("click",()=>openArtifacts(state.activeQuest));
+  $("btnLog").addEventListener("click",()=>openLogModal(state.activeQuest));
+  $("btnNext").addEventListener("click",()=>trekNext(state.activeQuest));
+  $("btnMap").addEventListener("click",()=>openMap(state.activeQuest));
+  $("btnExit").addEventListener("click",exitQuest);
+  $("btnModalClose").addEventListener("click",closeModal);
+  $("modalBack").addEventListener("click",(e)=>{if(e.target===$("modalBack"))closeModal()});
+  $("btnReset").addEventListener("click",resetAll);
+  $("btnSkin").addEventListener("click",cycleSkin);
+  $("btnExportSchema").addEventListener("click",showSchema);
+  $("btnBackToRequest").addEventListener("click",()=>{
+    showReveal(false);showConsole(false);
+    if(!state.activeQuest) clearStoryAppearance();
+    window.scrollTo({top:0,behavior:"smooth"});
+  });
+  window.addEventListener("keydown",(e)=>{
+    if(e.key==="Escape"){
+      if(briefingActive){abortBriefing();return}
+      closeModal();
+    }
+    if(briefingActive&&(e.key===" "||e.key==="Enter")){e.preventDefault();handleTapContinue()}
+  });
+
+  $("btnSkipBrief").addEventListener("click",()=>{
+    abortBriefing();
+    if(proposedQuest){
+      if(proposedQuest.appearance)applyStoryAppearance(proposedQuest.appearance);
+      renderReveal(proposedQuest);showReveal(true);
+    }
+  });
+  $("btnTapContinue").addEventListener("click",()=>{handleTapContinue()});
+
+  toast("Quest Console v3 online.");
+}
+
+boot();
+</script>
+</body>
+</html>

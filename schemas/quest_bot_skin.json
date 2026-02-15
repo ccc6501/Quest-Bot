@@ -1,0 +1,161 @@
+{
+“$schema”: “quest-console-appearance-v1”,
+“description”: “Appearance block for Quest Console story JSON. Drop this into your quest/story object under the ‘appearance’ key.”,
+“available_skins”: [“sci”, “parch”, “cozy”, “map”, “void”, “feral”],
+“skin_families”: {
+“sci”:   { “family”: “tech”,    “vibe”: “Neon terminal, cyber ops, Orbitron font” },
+“parch”: { “family”: “fantasy”, “vibe”: “Old world, treasure map, Cinzel + Pirata One fonts, dashed borders” },
+“cozy”:  { “family”: “whimsy”,  “vibe”: “Soft storybook, pastel glow, Quicksand font” },
+“map”:   { “family”: “nature”,  “vibe”: “Explorer cartography, earth tones, Cinzel font” },
+“void”:  { “family”: “cosmic”,  “vibe”: “Deep space, purple glow, Orbitron font” },
+“feral”: { “family”: “wild”,    “vibe”: “Jungle, neon green, high grain, Outfit font” }
+},
+“shape”: {
+“appearance”: {
+“skin”: “string — base skin id: sci | parch | cozy | map | void | feral”,
+“label”: “string — display name shown in story indicator bar”,
+“overrides”: {
+“–accent”: “Primary accent (hex/rgba). Headings, borders, glows.”,
+“–accent2”: “Secondary accent. Artifact rows, badges.”,
+“–bg0”: “Deepest background.”,
+“–bg1”: “Lighter background layer.”,
+“–glow1”: “Primary radial glow (rgba, low alpha).”,
+“–glow2”: “Secondary radial glow.”,
+“–glow-accent”: “Intense glow for text-shadow / box-shadow.”,
+“–stroke”: “Panel/card border color.”,
+“–glass”: “Glass panel bg (very low alpha).”,
+“–glass2”: “Slightly more opaque glass.”,
+“–text”: “Primary text color.”,
+“–muted”: “Secondary text.”,
+“–muted2”: “Tertiary / hint text.”,
+“–good”: “Success color.”,
+“–warn”: “Warning color.”,
+“–danger”: “Danger color.”,
+“–border-style”: “solid | dashed | dotted | double”,
+“–border-glow”: “CSS box-shadow for borders.”,
+“–accent-glow”: “CSS text-shadow for headings.”,
+“–card-shadow”: “CSS box-shadow for panels.”
+},
+“atmosphere”: {
+“grain”: “number 0–0.15 — film grain opacity”,
+“scanlines”: “number 0–0.12 — scan-line texture opacity”,
+“vignette”: “number 0–0.8 — edge darkening”,
+“blur”: “number 6–20 — panel backdrop blur px”
+},
+“fonts”: {
+“heading”: “CSS font-family — section headers, labels”,
+“display”: “CSS font-family — quest titles, brand mark”,
+“body”: “CSS font-family — body text”,
+“mono”: “CSS font-family — stats, data text”
+},
+“transitions”: {
+“[phase_name]”: {
+“trigger”: “primary_25 | primary_50 | primary_75 | primary_100 | side_50 | side_100 | xp_500 | xp_1000 | manual”,
+“skin”: “optional — base skin to shift to”,
+“overrides”: “object — CSS var overrides merged on top of base”,
+“label”: “string — indicator text during this phase”
+}
+}
+}
+},
+“examples”: [
+{
+“name”: “Treasure Hunt (Parchment → Void)”,
+“appearance”: {
+“skin”: “parch”,
+“label”: “The Cartographer’s Trail”,
+“overrides”: {
+“–accent”: “#E8A838”,
+“–accent2”: “#C45D2A”,
+“–border-style”: “dashed”
+},
+“atmosphere”: {
+“grain”: 0.06,
+“scanlines”: 0.03,
+“vignette”: 0.5,
+“blur”: 14
+},
+“fonts”: {
+“heading”: “‘Cinzel’, serif”,
+“display”: “‘Pirata One’, serif”
+},
+“transitions”: {
+“midpoint”: {
+“trigger”: “primary_50”,
+“overrides”: { “–accent”: “#FF5533”, “–glow1”: “rgba(255,85,51,.18)” },
+“label”: “The Map Burns”
+},
+“finale”: {
+“trigger”: “primary_100”,
+“skin”: “void”,
+“label”: “Beyond the Edge”
+}
+}
+}
+},
+{
+“name”: “Cyber Heist (Sci → Alert → Extraction)”,
+“appearance”: {
+“skin”: “sci”,
+“label”: “Data Heist”,
+“overrides”: {},
+“transitions”: {
+“alert”: {
+“trigger”: “primary_50”,
+“overrides”: { “–accent”: “#FF3366”, “–glow1”: “rgba(255,51,102,.15)” },
+“label”: “Alert: Sector Breach”
+},
+“extraction”: {
+“trigger”: “primary_100”,
+“skin”: “void”,
+“label”: “Extraction Complete”
+}
+}
+}
+},
+{
+“name”: “Cozy Storybook (No transitions)”,
+“appearance”: {
+“skin”: “cozy”,
+“label”: “Bedtime Quest”,
+“overrides”: {
+“–accent”: “#FFB5E8”
+},
+“atmosphere”: {
+“grain”: 0.02,
+“vignette”: 0.3,
+“blur”: 16
+}
+}
+},
+{
+“name”: “Jungle Expedition (Feral + phase shift)”,
+“appearance”: {
+“skin”: “feral”,
+“label”: “Deep Canopy Recon”,
+“overrides”: {
+“–accent”: “#88FF22”,
+“–glow1”: “rgba(136,255,34,.14)”
+},
+“atmosphere”: {
+“grain”: 0.05,
+“scanlines”: 0.04,
+“vignette”: 0.5
+},
+“transitions”: {
+“clearing”: {
+“trigger”: “primary_75”,
+“overrides”: { “–accent”: “#FFD700”, “–accent2”: “#FF8C00” },
+“label”: “The Clearing”
+},
+“summit”: {
+“trigger”: “primary_100”,
+“skin”: “map”,
+“overrides”: { “–accent”: “#7AE2C6” },
+“label”: “Summit Reached”
+}
+}
+}
+}
+]
+}
