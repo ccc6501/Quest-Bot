@@ -24,6 +24,10 @@ export default {
         return cors(await generateQuest(req, env));
       }
 
+      if (req.method === 'POST' && url.pathname === '/api/feedback') {
+        return cors(await addFeedback(req, env));
+      }
+
       return cors(new Response('Not found', { status: 404 }));
     } catch (err) {
       return cors(json({ ok: false, error: String(err?.message || err) }, 500));
@@ -186,6 +190,26 @@ async function generateQuest(req, env) {
   quest.inputs = quest.inputs || inputs;
 
   return json(quest);
+}
+
+// -----------------------
+// Feedback
+// -----------------------
+async function addFeedback(req, env) {
+  const body = await req.json();
+  const id = crypto.randomUUID();
+  const created_at = new Date().toISOString();
+  const kind = safeStr(body.kind || 'general', 40);
+  const target_id = safeStr(body.target_id || '', 80);
+  const rating = clampInt(body.rating, 1, 5, 3);
+  const note = safeStr(body.note || '', 1000);
+
+  await env.DB.prepare(`
+    INSERT INTO feedback (id, created_at, kind, target_id, rating, note, action)
+    VALUES (?, ?, ?, ?, ?, ?, 'none')
+  `).bind(id, created_at, kind, target_id, rating, note).run();
+
+  return json({ ok: true, feedback_id: id });
 }
 
 // -----------------------

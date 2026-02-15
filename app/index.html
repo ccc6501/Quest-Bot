@@ -1058,6 +1058,98 @@
     .wipe-flash{position:absolute; inset:0; background:var(--accent); opacity:0}
     .wipe-flash.go{animation:wipeFlash .6s ease forwards}
     @keyframes wipeFlash{0%{opacity:0}20%{opacity:.15}100%{opacity:0}}
+
+    /* ============================================
+       TAB BAR + INTEL/SETTINGS PANELS
+       ============================================ */
+    .tabBar{
+      display:flex;gap:0;padding:0 18px;border-bottom:1px solid var(--stroke);
+      margin-bottom:0;
+    }
+    .tabBtn{
+      background:none;border:none;color:var(--muted2);font-family:var(--heading-font);
+      font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+      padding:12px 18px 10px;cursor:pointer;border-bottom:2px solid transparent;
+      transition:all .2s;
+    }
+    .tabBtn:hover{color:var(--text)}
+    .tabBtn.active{color:var(--accent);border-bottom-color:var(--accent)}
+    .tabContent{display:none}
+    .tabContent.active{display:block}
+
+    .intelWrap .hd,
+    .tabContent > .hd{padding:18px 22px 0}
+    .intelWrap .body,
+    .tabContent > .body{padding:14px 22px 22px}
+
+    /* Recon form textarea */
+    #reconForm textarea{
+      width:100%;padding:12px 16px;background:var(--glass);border:1px var(--border-style) var(--stroke);
+      border-radius:14px;color:var(--text);font-family:var(--mono);font-size:13px;resize:vertical;
+      min-height:80px;
+    }
+    #reconForm textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px var(--glow1)}
+
+    /* Recon status card */
+    .reconStatus{
+      margin-top:14px;padding:16px 18px;background:var(--glass);border:1px var(--border-style) var(--stroke);
+      border-radius:var(--radius);font-family:var(--mono);font-size:13px;line-height:1.6;
+    }
+    .reconStatus .assessment{font-weight:700;font-size:14px;margin-bottom:6px}
+    .reconStatus .assessment.EXCELLENT{color:var(--good)}
+    .reconStatus .assessment.GOOD{color:var(--accent)}
+    .reconStatus .assessment.WEAK{color:var(--warn)}
+    .reconStatus .assessment.NOISE{color:var(--danger)}
+    .reconStatus .reco{margin-top:8px;color:var(--muted)}
+    .reconStatus .season{margin-top:6px;font-size:12px;color:var(--muted2)}
+
+    /* Recon list */
+    .reconList{display:flex;flex-direction:column;gap:8px}
+    .reconItem{
+      padding:12px 16px;background:var(--glass);border:1px var(--border-style) var(--stroke);
+      border-radius:14px;display:flex;justify-content:space-between;align-items:center;
+    }
+    .reconItem .ri-title{font-weight:700;font-size:13px}
+    .reconItem .ri-meta{font-family:var(--mono);font-size:11px;color:var(--muted2);margin-top:2px}
+    .reconItem .ri-score{
+      font-family:var(--mono);font-size:12px;font-weight:700;padding:4px 10px;
+      border-radius:8px;background:var(--glass2);
+    }
+
+    /* Module list */
+    .moduleList{display:flex;flex-direction:column;gap:8px}
+    .moduleCard{
+      padding:14px 16px;background:var(--glass);border:1px var(--border-style) var(--stroke);
+      border-radius:var(--radius);
+    }
+    .moduleCard .mc-title{font-weight:700;font-size:14px;margin-bottom:4px}
+    .moduleCard .mc-summary{font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:8px}
+    .moduleCard .mc-tags{display:flex;flex-wrap:wrap;gap:6px}
+    .moduleCard .mc-tag{
+      font-family:var(--mono);font-size:11px;padding:3px 10px;border-radius:8px;
+      background:var(--glass2);color:var(--muted);
+    }
+    .moduleCard .mc-meta{
+      display:flex;gap:10px;margin-top:8px;font-family:var(--mono);font-size:11px;color:var(--muted2);
+    }
+    .moduleCard .mc-confidence{
+      font-weight:700;
+    }
+    .moduleCard .mc-confidence.high{color:var(--good)}
+    .moduleCard .mc-confidence.mid{color:var(--accent)}
+    .moduleCard .mc-confidence.low{color:var(--warn)}
+
+    /* Settings */
+    .apiStatusBox{
+      padding:14px 16px;background:var(--glass);border:1px var(--border-style) var(--stroke);
+      border-radius:14px;font-family:var(--mono);font-size:13px;min-height:40px;
+    }
+    .apiStatusBox .ok{color:var(--good);font-weight:700}
+    .apiStatusBox .fail{color:var(--danger);font-weight:700}
+
+    /* Loading spinner */
+    .loadingDots::after{content:'...';animation:dots 1.5s steps(4,end) infinite}
+    @keyframes dots{0%,20%{content:'.'}40%{content:'..'}60%,100%{content:'...'}}
   </style>
 </head>
 <body data-skin="sci">
@@ -1257,8 +1349,16 @@
           </div>
         </section>
 
-        <!-- RIGHT: CONSOLE / PACKS -->
+        <!-- RIGHT: CONSOLE / PACKS / INTEL / SETTINGS -->
         <section class="panel" id="rightPanel">
+          <div class="tabBar" id="tabBar">
+            <button class="tabBtn active" data-tab="quest">Quest</button>
+            <button class="tabBtn" data-tab="intel">Intel</button>
+            <button class="tabBtn" data-tab="settings">Settings</button>
+          </div>
+
+          <!-- TAB: QUEST (Console + Packs) -->
+          <div class="tabContent active" id="tabQuest" data-tab="quest">
           <!-- CONSOLE -->
           <div class="console" id="consoleBox">
             <div class="consoleHeader">
@@ -1329,6 +1429,110 @@
               </div>
             </div>
           </div>
+          </div><!-- /tabQuest -->
+
+          <!-- TAB: INTEL (Recon + Modules) -->
+          <div class="tabContent" id="tabIntel" data-tab="intel">
+            <div class="intelWrap">
+
+              <!-- RECON SUBMIT -->
+              <div class="hd">
+                <div class="title">
+                  <h2>Recon Intel</h2>
+                  <p>Drop recon data (text, URLs, local tips). The Handler's intel analyst extracts quest modules.</p>
+                </div>
+                <div class="btnrow">
+                  <button class="ghost" id="btnRefreshRecon">Refresh</button>
+                </div>
+              </div>
+
+              <div class="body">
+                <div class="form" id="reconForm" style="gap:14px">
+                  <label>
+                    Recon Type
+                    <select id="rType">
+                      <option value="text" selected>Text / Notes</option>
+                      <option value="url">URL (webpage)</option>
+                    </select>
+                  </label>
+                  <label class="full">
+                    Title (optional)
+                    <input id="rTitleIn" placeholder="e.g. 'Hidden bakery on Main St'" />
+                  </label>
+                  <label class="full" id="rUrlLabel" style="display:none">
+                    URL
+                    <input id="rUrlIn" placeholder="https://..." />
+                  </label>
+                  <label class="full">
+                    Recon Text
+                    <textarea id="rTextIn" rows="5" placeholder="Paste tips, reviews, local knowledge, event listings, trail descriptions..."></textarea>
+                  </label>
+                  <div class="full btnrow">
+                    <button class="primary" id="btnSubmitRecon">Submit Recon</button>
+                  </div>
+                </div>
+
+                <div id="reconStatus" style="display:none" class="reconStatus"></div>
+
+                <div class="sep" style="margin:18px 0"></div>
+
+                <!-- RECON LIST -->
+                <h3 style="margin:0 0 10px;font-family:var(--heading-font);font-size:15px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">Recon History</h3>
+                <div id="reconList" class="reconList">
+                  <div class="hint">No recon loaded. Set API base in Settings, then submit recon or tap Refresh.</div>
+                </div>
+
+                <div class="sep" style="margin:18px 0"></div>
+
+                <!-- MODULES -->
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                  <h3 style="margin:0;font-family:var(--heading-font);font-size:15px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">Extracted Modules</h3>
+                  <button class="ghost" id="btnRefreshModules" style="padding:6px 14px;font-size:12px">Refresh</button>
+                </div>
+                <div id="moduleList" class="moduleList">
+                  <div class="hint">No modules loaded yet.</div>
+                </div>
+              </div>
+            </div>
+          </div><!-- /tabIntel -->
+
+          <!-- TAB: SETTINGS -->
+          <div class="tabContent" id="tabSettings" data-tab="settings">
+            <div class="hd">
+              <div class="title">
+                <h2>Settings</h2>
+                <p>Configure your Quest Console backend connection.</p>
+              </div>
+            </div>
+            <div class="body">
+              <div class="form" style="gap:14px">
+                <label class="full">
+                  API Base URL
+                  <input id="sApiBase" placeholder="https://quest-handler.your-domain.workers.dev" />
+                </label>
+                <div class="full hint">
+                  Point this at your deployed Cloudflare Worker. The console will use <code>/api/quest/generate</code>, <code>/api/recon/add</code>, etc.
+                </div>
+                <div class="full btnrow">
+                  <button class="primary" id="btnSaveSettings">Save</button>
+                  <button class="ghost" id="btnTestApi">Test Connection</button>
+                </div>
+                <div id="settingsStatus" class="hint" style="min-height:20px"></div>
+              </div>
+
+              <div class="sep" style="margin:18px 0"></div>
+
+              <div class="form" style="gap:14px">
+                <label class="full">
+                  API Status
+                  <div id="apiStatusBox" class="apiStatusBox">
+                    <span class="muted">Not tested yet</span>
+                  </div>
+                </label>
+              </div>
+            </div>
+          </div><!-- /tabSettings -->
+
         </section>
       </div>
 
@@ -1547,7 +1751,8 @@ function defaultState(){
     xp_total: 0,
     level: 1,
     packs: [],
-    activeQuest: null
+    activeQuest: null,
+    api_base: ""
   };
 }
 let state = loadState();
@@ -1833,6 +2038,15 @@ function showReveal(show){
 function showConsole(show){
   $("consoleBox").classList.toggle("active", !!show);
   $("packsBox").classList.toggle("active", !show);
+  // Ensure Quest tab is active when showing console/packs
+  switchTab("quest");
+}
+function switchTab(tab){
+  const bar=$("tabBar");if(!bar)return;
+  bar.querySelectorAll(".tabBtn").forEach(b=>b.classList.toggle("active",b.getAttribute("data-tab")===tab));
+  document.querySelectorAll("#rightPanel > .tabContent").forEach(tc=>{
+    tc.classList.toggle("active",tc.getAttribute("data-tab")===tab);
+  });
 }
 
 /* ==========================================
@@ -1965,14 +2179,80 @@ function mkTask(text,primary,i){
   return {id:uid(),text,primary,idx:i,done:false,xp:primary?100:150};
 }
 
-/* ---------- AI hook (stubbed) ---------- */
+/* ---------- AI hook (wired to backend) ---------- */
+function apiBase(){return (state.api_base||"").replace(/\/+$/,"")}
+
 async function maybeGenerateQuestAI(inputs,avoid){
-  const AI_ENDPOINT="";
-  if(!AI_ENDPOINT)return null;
-  const payload={inputs,avoid,interests:INTERESTS.map(x=>({theme:x.theme,tags:x.tags}))};
-  const res=await fetch(AI_ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
-  if(!res.ok)throw new Error("AI endpoint failed");
+  const base=apiBase();
+  if(!base)return null;
+  const payload={inputs,avoid_titles:(avoid.avoidThemes||[])};
+  const res=await fetch(base+"/api/quest/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+  if(!res.ok)throw new Error("AI endpoint failed: "+res.status);
+  const quest=await res.json();
+  if(!quest||!quest.title)return null;
+  // normalize from backend shape to frontend shape
+  quest.id=quest.id||uid();
+  quest.created_at=quest.created_at||nowISO();
+  quest.started_at=null;
+  quest.ended_at=null;
+  quest.status=quest.status||"proposed";
+  quest.inputs=quest.inputs||inputs;
+  if(!quest.primary)quest.primary=[];
+  if(!quest.side)quest.side=[];
+  if(!quest.artifacts)quest.artifacts=[];
+  quest.primary=quest.primary.map((t,i)=>({id:t.id||uid(),text:t.text||t,primary:true,idx:i,done:false,xp:t.xp||100}));
+  quest.side=quest.side.map((t,i)=>({id:t.id||uid(),text:t.text||t,primary:false,idx:i,done:false,xp:t.xp||150}));
+  quest.artifacts=quest.artifacts.map(a=>({id:a.id||uid(),status:"unseen",...a}));
+  if(!quest.appearance)quest.appearance={skin:state.skin};
+  if(!quest.scoring)quest.scoring={accept_xp:50,step_xp:100,side_xp:150,log_xp:75,selfie_xp:200,wonka_xp:150,herring_xp:300,complete_xp:500};
+  if(!quest.progress)quest.progress={current_primary_index:0,xp_this_quest:0,plunder_score:0,memories:[]};
+  if(!quest.handler)quest.handler=null;
+  return quest;
+}
+
+/* ---------- Recon API ---------- */
+async function submitRecon(type,title,text,url){
+  const base=apiBase();
+  if(!base)throw new Error("API base not configured");
+  const payload={type,title,text,url};
+  const res=await fetch(base+"/api/recon/add",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+  if(!res.ok){const err=await res.json().catch(()=>({}));throw new Error(err.error||"Recon submit failed")}
   return await res.json();
+}
+
+async function fetchReconList(limit=50){
+  const base=apiBase();
+  if(!base)throw new Error("API base not configured");
+  const res=await fetch(base+"/api/recon/list?limit="+limit);
+  if(!res.ok)throw new Error("Failed to fetch recon list");
+  return await res.json();
+}
+
+async function fetchModuleList(limit=80){
+  const base=apiBase();
+  if(!base)throw new Error("API base not configured");
+  const res=await fetch(base+"/api/modules/list?limit="+limit);
+  if(!res.ok)throw new Error("Failed to fetch modules");
+  return await res.json();
+}
+
+async function submitFeedback(kind,targetId,rating,note){
+  const base=apiBase();
+  if(!base)throw new Error("API base not configured");
+  const payload={kind,target_id:targetId,rating,note};
+  const res=await fetch(base+"/api/feedback",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+  if(!res.ok)throw new Error("Feedback submit failed");
+  return await res.json();
+}
+
+async function pingApi(){
+  const base=apiBase();
+  if(!base)return {ok:false,error:"No API base set"};
+  try{
+    const res=await fetch(base+"/api/ping");
+    if(!res.ok)return {ok:false,error:"HTTP "+res.status};
+    return await res.json();
+  }catch(e){return {ok:false,error:String(e.message||e)}}
 }
 
 /* ---------- UI Rendering ---------- */
@@ -2509,11 +2789,23 @@ async function summon(){
     constraints:($("fConstraints").value||"").trim(),party:($("fParty").value||"").trim()
   };
   const avoid={avoidThemes:state.packs.slice(0,6).map(p=>p.title.split(" — ")[0])};
+
+  $("btnSummon").disabled=true;
+  $("btnSummon").textContent="Summoning...";
+
   let q=null;
-  try{q=await maybeGenerateQuestAI(inputs,avoid)}catch(e){q=null}
+  let source="local";
+  try{
+    q=await maybeGenerateQuestAI(inputs,avoid);
+    if(q)source="ai";
+  }catch(e){q=null}
   if(!q)q=generateQuestFromInputs(inputs,avoid);
 
+  $("btnSummon").disabled=false;
+  $("btnSummon").textContent="Summon Quest";
+
   proposedQuest=q;
+  if(source==="local"&&apiBase())toast("AI unavailable — using local quest templates.");
 
   // Launch Handler Briefing cinematic → then reveal
   await startBriefing(q);
@@ -2588,6 +2880,161 @@ function makePlaceholderClueDataURL(){
   return "data:image/svg+xml;charset=utf-8,"+encodeURIComponent(svg);
 }
 
+/* ---------- Tab System ---------- */
+function initTabs(){
+  const bar=$("tabBar");if(!bar)return;
+  bar.querySelectorAll(".tabBtn").forEach(btn=>{
+    btn.addEventListener("click",()=>switchTab(btn.getAttribute("data-tab")));
+  });
+}
+
+/* ---------- Recon UI ---------- */
+function initReconForm(){
+  const typeSelect=$("rType");
+  typeSelect.addEventListener("change",()=>{
+    $("rUrlLabel").style.display=typeSelect.value==="url"?"block":"none";
+  });
+
+  $("btnSubmitRecon").addEventListener("click",async()=>{
+    const base=apiBase();
+    if(!base){toast("Set API base in Settings first.");return}
+    const type=typeSelect.value;
+    const title=($("rTitleIn").value||"").trim();
+    const text=($("rTextIn").value||"").trim();
+    const url=($("rUrlIn").value||"").trim();
+
+    if(type==="text"&&text.length<10){toast("Recon text too short (min 10 chars).");return}
+    if(type==="url"&&!url){toast("Provide a URL.");return}
+
+    $("btnSubmitRecon").disabled=true;
+    $("btnSubmitRecon").textContent="Analyzing...";
+    try{
+      const result=await submitRecon(type,title,text,url);
+      showReconResult(result);
+      $("rTitleIn").value="";$("rTextIn").value="";$("rUrlIn").value="";
+      toast(`Recon processed — ${result.modules_created||0} module(s) extracted.`);
+      refreshReconList();refreshModuleList();
+    }catch(e){
+      toast("Recon failed: "+e.message);
+    }finally{
+      $("btnSubmitRecon").disabled=false;
+      $("btnSubmitRecon").textContent="Submit Recon";
+    }
+  });
+
+  $("btnRefreshRecon").addEventListener("click",()=>{refreshReconList();refreshModuleList()});
+  $("btnRefreshModules").addEventListener("click",refreshModuleList);
+}
+
+function showReconResult(result){
+  const box=$("reconStatus");box.style.display="block";
+  const rs=result.recon_status||{};
+  const assessment=rs.assessment||"—";
+  const qScore=rs.quality_score!=null?Math.round(rs.quality_score*100)+"%":"—";
+  const notes=rs.quality_notes||"";
+  const season=rs.season||{};
+  const reco=(rs.recommended_recon||[]);
+
+  box.innerHTML=`
+    <div class="assessment ${escapeHtml(assessment)}">${escapeHtml(assessment)} · Quality ${escapeHtml(qScore)}</div>
+    <div>${escapeHtml(notes)}</div>
+    <div class="season">Modules: ${season.modules_total||0}/${season.target||14} · Readiness: ${season.readiness_pct||0}%</div>
+    ${reco.length?`<div class="reco">Recommended recon: ${reco.map(r=>`<em>${escapeHtml(r)}</em>`).join(", ")}</div>`:""}
+  `;
+}
+
+async function refreshReconList(){
+  const base=apiBase();
+  if(!base){$("reconList").innerHTML='<div class="hint">Set API base in Settings first.</div>';return}
+  $("reconList").innerHTML='<div class="hint"><span class="loadingDots">Loading</span></div>';
+  try{
+    const data=await fetchReconList();
+    const items=data.items||[];
+    if(!items.length){$("reconList").innerHTML='<div class="hint">No recon submitted yet.</div>';return}
+    $("reconList").innerHTML="";
+    items.forEach(item=>{
+      const el=document.createElement("div");el.className="reconItem";
+      const qs=item.quality_score!=null?Math.round(item.quality_score*100)+"%":"—";
+      el.innerHTML=`
+        <div>
+          <div class="ri-title">${escapeHtml(item.title||item.type||"Recon")}</div>
+          <div class="ri-meta">${escapeHtml(new Date(item.created_at).toLocaleDateString())} · ${escapeHtml(item.type)}</div>
+        </div>
+        <div class="ri-score">${escapeHtml(qs)}</div>
+      `;
+      $("reconList").appendChild(el);
+    });
+  }catch(e){
+    $("reconList").innerHTML=`<div class="hint" style="color:var(--danger)">${escapeHtml(e.message)}</div>`;
+  }
+}
+
+async function refreshModuleList(){
+  const base=apiBase();
+  if(!base){$("moduleList").innerHTML='<div class="hint">Set API base in Settings first.</div>';return}
+  $("moduleList").innerHTML='<div class="hint"><span class="loadingDots">Loading</span></div>';
+  try{
+    const data=await fetchModuleList();
+    const items=data.items||[];
+    if(!items.length){$("moduleList").innerHTML='<div class="hint">No modules extracted yet. Submit recon to generate modules.</div>';return}
+    $("moduleList").innerHTML="";
+    items.forEach(m=>{
+      const el=document.createElement("div");el.className="moduleCard";
+      const conf=m.confidence!=null?m.confidence:0;
+      const confClass=conf>=0.8?"high":conf>=0.5?"mid":"low";
+      const confPct=Math.round(conf*100)+"%";
+      const tags=(Array.isArray(m.tags)?m.tags:[]).map(t=>`<span class="mc-tag">${escapeHtml(t)}</span>`).join("");
+      const dur=(Array.isArray(m.duration_fit)?m.duration_fit:[]).join(", ");
+      const weather=(Array.isArray(m.weather_fit)?m.weather_fit:[]).join(", ");
+      const range=(Array.isArray(m.range_fit)?m.range_fit:[]).join(", ");
+      el.innerHTML=`
+        <div class="mc-title">${escapeHtml(m.title||"Untitled")}</div>
+        <div class="mc-summary">${escapeHtml(m.summary||"")}</div>
+        ${tags?`<div class="mc-tags">${tags}</div>`:""}
+        <div class="mc-meta">
+          <span class="mc-confidence ${confClass}">Conf: ${confPct}</span>
+          ${m.vibe?`<span>Vibe: ${escapeHtml(m.vibe)}</span>`:""}
+          ${dur?`<span>Dur: ${escapeHtml(dur)}</span>`:""}
+          ${range?`<span>Range: ${escapeHtml(range)}</span>`:""}
+          ${weather?`<span>Weather: ${escapeHtml(weather)}</span>`:""}
+        </div>
+        ${m.location_hint?`<div style="margin-top:6px;font-size:12px;color:var(--muted2)">Location: ${escapeHtml(m.location_hint)}</div>`:""}
+      `;
+      $("moduleList").appendChild(el);
+    });
+  }catch(e){
+    $("moduleList").innerHTML=`<div class="hint" style="color:var(--danger)">${escapeHtml(e.message)}</div>`;
+  }
+}
+
+/* ---------- Settings UI ---------- */
+function initSettings(){
+  $("sApiBase").value=state.api_base||"";
+
+  $("btnSaveSettings").addEventListener("click",()=>{
+    state.api_base=($("sApiBase").value||"").trim();
+    saveState();
+    $("settingsStatus").textContent="Settings saved.";
+    $("settingsStatus").style.color="var(--good)";
+    toast("Settings saved.");
+  });
+
+  $("btnTestApi").addEventListener("click",async()=>{
+    const base=($("sApiBase").value||"").trim();
+    if(!base){$("apiStatusBox").innerHTML='<span class="fail">No URL entered</span>';return}
+    state.api_base=base;saveState();
+    $("apiStatusBox").innerHTML='<span class="loadingDots">Testing</span>';
+    const result=await pingApi();
+    if(result.ok){
+      $("apiStatusBox").innerHTML=`<span class="ok">Connected</span> · ${escapeHtml(result.ts||"")}`;
+      toast("API connection OK.");
+    }else{
+      $("apiStatusBox").innerHTML=`<span class="fail">Failed</span> · ${escapeHtml(result.error||"Unknown error")}`;
+      toast("API connection failed.");
+    }
+  });
+}
+
 /* ---------- Telegram WebApp ---------- */
 function initTelegram(){
   const tg=window.Telegram?.WebApp;if(!tg)return;
@@ -2597,6 +3044,9 @@ function initTelegram(){
 /* ---------- Boot ---------- */
 function boot(){
   initTelegram();
+  initTabs();
+  initReconForm();
+  initSettings();
   buildSkinStrip();
   setSkin(state.skin||"sci");
   updateTopChips();
