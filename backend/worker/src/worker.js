@@ -1,36 +1,42 @@
+const MAX_BODY_BYTES = 80_000;
+
 export default {
   async fetch(req, env) {
     const url = new URL(req.url);
-    if (req.method === 'OPTIONS') return cors(new Response(null, { status: 204 }));
+    const requestId = crypto.randomUUID();
+
+    if (req.method === 'OPTIONS') return cors(new Response(null, { status: 204 }), requestId);
 
     try {
       if (req.method === 'GET' && url.pathname === '/api/ping') {
-        return cors(json({ ok: true, ts: new Date().toISOString() }));
+        return cors(json({ ok: true, ts: new Date().toISOString() }), requestId);
       }
 
       if (req.method === 'POST' && url.pathname === '/api/recon/add') {
-        return cors(await addRecon(req, env));
+        return cors(await addRecon(req, env), requestId);
       }
 
       if (req.method === 'GET' && url.pathname === '/api/recon/list') {
-        return cors(await listRecon(url, env));
+        return cors(await listRecon(url, env), requestId);
       }
 
       if (req.method === 'GET' && url.pathname === '/api/modules/list') {
-        return cors(await listModules(url, env));
+        return cors(await listModules(url, env), requestId);
       }
 
       if (req.method === 'POST' && url.pathname === '/api/quest/generate') {
-        return cors(await generateQuest(req, env));
+        return cors(await generateQuest(req, env), requestId);
       }
 
       if (req.method === 'POST' && url.pathname === '/api/feedback') {
-        return cors(await addFeedback(req, env));
+        return cors(await addFeedback(req, env), requestId);
       }
 
-      return cors(new Response('Not found', { status: 404 }));
+      return cors(new Response('Not found', { status: 404 }), requestId);
     } catch (err) {
-      return cors(json({ ok: false, error: String(err?.message || err) }, 500));
+      const msg = String(err?.message || err);
+      if (msg === 'payload_too_large') return cors(json({ ok: false, error: 'Payload too large' }, 413), requestId);
+      return cors(json({ ok: false, error: msg }, 500), requestId);
     }
   }
 };
@@ -39,7 +45,7 @@ export default {
 // Recon → Modules
 // -----------------------
 async function addRecon(req, env) {
-  const body = await req.json();
+  const body = await readJson(req);
   const id = crypto.randomUUID();
   const created_at = new Date().toISOString();
 
@@ -156,7 +162,7 @@ async function listModules(url, env) {
 // Modules → Quest
 // -----------------------
 async function generateQuest(req, env) {
-  const body = await req.json();
+  const body = await readJson(req);
   const inputs = body.inputs || {};
   const avoid = Array.isArray(body.avoid_titles) ? body.avoid_titles : [];
 
@@ -196,7 +202,7 @@ async function generateQuest(req, env) {
 // Feedback
 // -----------------------
 async function addFeedback(req, env) {
-  const body = await req.json();
+  const body = await readJson(req);
   const id = crypto.randomUUID();
   const created_at = new Date().toISOString();
   const kind = safeStr(body.kind || 'general', 40);
@@ -375,13 +381,19 @@ function safeJson(s, dflt){
   try { return typeof s === 'string' ? JSON.parse(s) : (s ?? dflt); }
   catch { return dflt; }
 }
+async function readJson(req) {
+  const text = await req.text();
+  if (text.length > MAX_BODY_BYTES) throw new Error('payload_too_large');
+  return text ? JSON.parse(text) : {};
+}
 function json(obj, status = 200) {
   return new Response(JSON.stringify(obj), { status, headers: { 'Content-Type': 'application/json; charset=utf-8' } });
 }
-function cors(res) {
+function cors(res, requestId) {
   const h = new Headers(res.headers);
   h.set('Access-Control-Allow-Origin', '*');
   h.set('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
-  h.set('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+  h.set('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Request-Id');
+  if (requestId) h.set('X-Request-Id', requestId);
   return new Response(res.body, { status: res.status, headers: h });
 }

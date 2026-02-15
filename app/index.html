@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="robots" content="noindex,nofollow,noarchive,nosnippet">
+  <meta name="googlebot" content="noindex,nofollow,noarchive,nosnippet">
   <title>Quest Console — Adventure Planner</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=JetBrains+Mono:wght@400;700&family=Outfit:wght@400;700;900&family=Pirata+One&family=Orbitron:wght@700;900&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
@@ -1150,6 +1152,57 @@
     /* Loading spinner */
     .loadingDots::after{content:'...';animation:dots 1.5s steps(4,end) infinite}
     @keyframes dots{0%,20%{content:'.'}40%{content:'..'}60%,100%{content:'...'}}
+
+    /* ============================================
+       FEEDBACK DRAWER
+       ============================================ */
+    .fbDrawer{
+      position:fixed;left:0;right:0;bottom:0;z-index:9999;
+      transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);
+      pointer-events:none;
+    }
+    .fbDrawer.open{transform:translateY(0);pointer-events:auto}
+    .fbCard{
+      margin:12px;border-radius:var(--radius);padding:18px 20px;
+      background:rgba(10,10,14,.94);backdrop-filter:blur(14px);
+      border:1px var(--border-style) var(--stroke);
+      box-shadow:var(--card-shadow);
+    }
+    .fbTitle{
+      font-family:var(--heading-font);font-size:14px;font-weight:700;
+      letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin-bottom:12px;
+    }
+    .fbRow{margin-top:10px;display:flex;flex-direction:column;gap:6px}
+    .fbRow label{font-family:var(--mono);font-size:12px;color:var(--muted);letter-spacing:.04em}
+    .fbStars{display:flex;gap:4px}
+    .fbStars label{
+      cursor:pointer;padding:6px 12px;border-radius:10px;
+      background:var(--glass);border:1px solid var(--stroke);
+      font-family:var(--mono);font-size:13px;color:var(--muted);
+      transition:all .15s;
+    }
+    .fbStars input{display:none}
+    .fbStars input:checked+span,
+    .fbStars label:has(input:checked){
+      background:var(--accent);color:var(--bg0);border-color:var(--accent);
+    }
+    .fbRow textarea{
+      width:100%;padding:10px 14px;background:var(--glass);border:1px var(--border-style) var(--stroke);
+      border-radius:12px;color:var(--text);font-family:var(--mono);font-size:13px;resize:vertical;
+      min-height:50px;
+    }
+    .fbRow textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px var(--glow1)}
+    .fbRow input[type="text"]{
+      width:100%;padding:10px 14px;background:var(--glass);border:1px var(--border-style) var(--stroke);
+      border-radius:12px;color:var(--text);font-family:var(--mono);font-size:13px;
+    }
+    .fbRow input[type="text"]:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px var(--glow1)}
+    .fbBtns{display:flex;gap:10px;justify-content:flex-end;margin-top:14px}
+    .fbScrim{
+      position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:9998;
+      opacity:0;pointer-events:none;transition:opacity .3s;
+    }
+    .fbScrim.open{opacity:1;pointer-events:auto}
   </style>
 </head>
 <body data-skin="sci">
@@ -1549,6 +1602,36 @@
         </div>
       </div>
       <div class="mc" id="modalContent"></div>
+    </div>
+  </div>
+
+  <!-- FEEDBACK DRAWER -->
+  <div class="fbScrim" id="fbScrim"></div>
+  <div class="fbDrawer" id="feedbackDrawer">
+    <div class="fbCard">
+      <div class="fbTitle" id="fbTitle">Feedback</div>
+      <div class="fbRow">
+        <label>Rating</label>
+        <div class="fbStars" id="fbStars">
+          <label><input type="radio" name="fb_rating" value="1"><span>1</span></label>
+          <label><input type="radio" name="fb_rating" value="2"><span>2</span></label>
+          <label><input type="radio" name="fb_rating" value="3" checked><span>3</span></label>
+          <label><input type="radio" name="fb_rating" value="4"><span>4</span></label>
+          <label><input type="radio" name="fb_rating" value="5"><span>5</span></label>
+        </div>
+      </div>
+      <div class="fbRow">
+        <label>Note</label>
+        <textarea id="fb_note" rows="2" placeholder="What worked / what was missing..."></textarea>
+      </div>
+      <div class="fbRow">
+        <label>Suggested Action</label>
+        <input type="text" id="fb_action" placeholder="Next recon / improvement idea..." />
+      </div>
+      <div class="fbBtns">
+        <button class="ghost" id="btnFbClose">Close</button>
+        <button class="primary" id="btnFbSubmit">Submit</button>
+      </div>
     </div>
   </div>
 
@@ -2180,7 +2263,7 @@ function mkTask(text,primary,i){
 }
 
 /* ---------- AI hook (wired to backend) ---------- */
-function apiBase(){return (state.api_base||"").replace(/\/+$/,"")}
+function apiBase(){return (state.api_base||location.origin).replace(/\/+$/,"")}
 
 async function maybeGenerateQuestAI(inputs,avoid){
   const base=apiBase();
@@ -2516,6 +2599,8 @@ function completeQuest(q){
   state.packs.unshift(pack);state.activeQuest=null;
   clearStoryAppearance();
   saveState();renderPacks();showConsole(false);toast("Adventure Pack created.");
+  // Prompt for quest feedback
+  setTimeout(()=>openFeedbackDrawer("quest",q.id,"Rate This Quest"),800);
 }
 
 /* ---------- Packs ---------- */
@@ -2896,8 +2981,6 @@ function initReconForm(){
   });
 
   $("btnSubmitRecon").addEventListener("click",async()=>{
-    const base=apiBase();
-    if(!base){toast("Set API base in Settings first.");return}
     const type=typeSelect.value;
     const title=($("rTitleIn").value||"").trim();
     const text=($("rTextIn").value||"").trim();
@@ -2912,8 +2995,14 @@ function initReconForm(){
       const result=await submitRecon(type,title,text,url);
       showReconResult(result);
       $("rTitleIn").value="";$("rTextIn").value="";$("rUrlIn").value="";
-      toast(`Recon processed — ${result.modules_created||0} module(s) extracted.`);
+      const reconId=result.recon_id||"";
+      const mods=result.modules_created||0;
+      toast(`Recon processed — ${mods} module(s) extracted.`);
       refreshReconList();refreshModuleList();
+      // Show feedback drawer for this recon
+      if(reconId)setTimeout(()=>openFeedbackDrawer("recon",reconId,"Rate This Recon"),600);
+      // Show "Generate Quest" CTA if modules exist
+      if(mods>0)showReconQuestCTA();
     }catch(e){
       toast("Recon failed: "+e.message);
     }finally{
@@ -2941,6 +3030,23 @@ function showReconResult(result){
     <div class="season">Modules: ${season.modules_total||0}/${season.target||14} · Readiness: ${season.readiness_pct||0}%</div>
     ${reco.length?`<div class="reco">Recommended recon: ${reco.map(r=>`<em>${escapeHtml(r)}</em>`).join(", ")}</div>`:""}
   `;
+}
+
+function showReconQuestCTA(){
+  // Add a "Generate Quest" CTA to the recon status area
+  const existing=$("reconQuestCTA");
+  if(existing)existing.remove();
+  const btn=document.createElement("button");
+  btn.id="reconQuestCTA";
+  btn.className="primary";
+  btn.style.cssText="margin-top:14px;width:100%";
+  btn.textContent="Generate Quest from Modules";
+  btn.addEventListener("click",()=>{
+    switchTab("quest");
+    window.scrollTo({top:0,behavior:"smooth"});
+    toast("Fill in quest parameters and tap Summon.");
+  });
+  $("reconStatus").appendChild(btn);
 }
 
 async function refreshReconList(){
@@ -3010,6 +3116,7 @@ async function refreshModuleList(){
 /* ---------- Settings UI ---------- */
 function initSettings(){
   $("sApiBase").value=state.api_base||"";
+  $("sApiBase").placeholder=location.origin+" (same-origin default)";
 
   $("btnSaveSettings").addEventListener("click",()=>{
     state.api_base=($("sApiBase").value||"").trim();
@@ -3035,6 +3142,69 @@ function initSettings(){
   });
 }
 
+/* ---------- Feedback Drawer ---------- */
+let fbContext={kind:"general",target_id:""};
+let fbQueue=[];
+
+function openFeedbackDrawer(kind,targetId,title){
+  fbContext={kind,target_id:targetId};
+  $("fbTitle").textContent=title||"Feedback";
+  // Reset form
+  document.querySelectorAll("input[name=fb_rating]").forEach(r=>{r.checked=r.value==="3"});
+  $("fb_note").value="";$("fb_action").value="";
+  $("feedbackDrawer").classList.add("open");
+  $("fbScrim").classList.add("open");
+}
+
+function closeFeedbackDrawer(){
+  $("feedbackDrawer").classList.remove("open");
+  $("fbScrim").classList.remove("open");
+}
+
+function initFeedbackDrawer(){
+  $("btnFbClose").addEventListener("click",closeFeedbackDrawer);
+  $("fbScrim").addEventListener("click",closeFeedbackDrawer);
+
+  $("btnFbSubmit").addEventListener("click",async()=>{
+    const rating=Number(document.querySelector("input[name=fb_rating]:checked")?.value||3);
+    const note=($("fb_note").value||"").trim();
+    const action=($("fb_action").value||"").trim();
+    const fullNote=action?note+"\n[Action] "+action:note;
+
+    $("btnFbSubmit").disabled=true;
+    $("btnFbSubmit").textContent="Sending...";
+
+    try{
+      await submitFeedback(fbContext.kind,fbContext.target_id,rating,fullNote);
+      toast("Feedback submitted.");
+      closeFeedbackDrawer();
+    }catch(e){
+      // Queue for later if offline / API down
+      fbQueue.push({kind:fbContext.kind,target_id:fbContext.target_id,rating,note:fullNote,ts:nowISO()});
+      saveFbQueue();
+      toast("Queued locally (API unavailable).");
+      closeFeedbackDrawer();
+    }finally{
+      $("btnFbSubmit").disabled=false;
+      $("btnFbSubmit").textContent="Submit";
+    }
+  });
+}
+
+function saveFbQueue(){try{localStorage.setItem("quest_fb_queue",JSON.stringify(fbQueue))}catch(e){}}
+function loadFbQueue(){try{fbQueue=JSON.parse(localStorage.getItem("quest_fb_queue")||"[]")}catch(e){fbQueue=[]}}
+
+async function flushFbQueue(){
+  if(!fbQueue.length)return;
+  const pending=[...fbQueue];fbQueue=[];saveFbQueue();
+  for(const fb of pending){
+    try{await submitFeedback(fb.kind,fb.target_id,fb.rating,fb.note)}
+    catch(e){fbQueue.push(fb)}
+  }
+  saveFbQueue();
+  if(fbQueue.length)console.log("Feedback queue: "+fbQueue.length+" remaining");
+}
+
 /* ---------- Telegram WebApp ---------- */
 function initTelegram(){
   const tg=window.Telegram?.WebApp;if(!tg)return;
@@ -3047,6 +3217,8 @@ function boot(){
   initTabs();
   initReconForm();
   initSettings();
+  initFeedbackDrawer();
+  loadFbQueue();
   buildSkinStrip();
   setSkin(state.skin||"sci");
   updateTopChips();
@@ -3098,6 +3270,7 @@ function boot(){
   $("btnTapContinue").addEventListener("click",()=>{handleTapContinue()});
 
   toast("Quest Console v3 online.");
+  setTimeout(flushFbQueue,3000);
 }
 
 boot();
