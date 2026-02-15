@@ -1,0 +1,1539 @@
+Below is a self‐contained HTML file that adds a full suite of reusable UI components on top of your quest console concept: map modal, buttons, progress bars, achievements, cards, notifications, tabs, and more.[1]
+
+Skins are controlled via a single `data-skin` attribute on `<body>` and a small set of CSS variables. Switch skins by changing `data-skin="default"` to `data-skin="forest"` or `data-skin="neon"` in HTML or via the skin selector at the top.
+
+```html
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <title>Quest Console UI Kit</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <style>
+    /* =========================
+       GLOBAL THEME & SKINS
+       ========================= */
+
+    :root {
+      --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --radius-sm: 4px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --shadow-soft: 0 12px 30px rgba(0, 0, 0, 0.4);
+      --transition-fast: 0.15s ease-out;
+    }
+
+    body {
+      margin: 0;
+      font-family: var(--font-sans);
+      background: radial-gradient(circle at top, #1f2933 0%, #020617 60%, #000 100%);
+      color: #e5e7eb;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    .root {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding: 16px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    h1, h2, h3 {
+      margin: 0 0 8px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+    }
+
+    h2 {
+      font-size: 1.1rem;
+    }
+
+    h3 {
+      font-size: 0.9rem;
+    }
+
+    .section {
+      background: rgba(15, 23, 42, 0.9);
+      border-radius: var(--radius-lg);
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      padding: 16px;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .section-header-title {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .section-subtitle {
+      font-size: 0.8rem;
+      color: #9ca3af;
+      text-transform: none;
+      letter-spacing: 0;
+    }
+
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .col {
+      flex: 1 1 260px;
+      min-width: 0;
+    }
+
+    /* =========================
+       SKIN SYSTEM
+       ========================= */
+
+    /* Default skin (Oracle / Arcane) */
+    body[data-skin="default"] {
+      --accent: #f97316;
+      --accent-soft: rgba(249, 115, 22, 0.2);
+      --accent-strong: rgba(249, 115, 22, 0.4);
+      --accent-muted: #fed7aa;
+      --bg-elevated: rgba(15, 23, 42, 0.98);
+      --bg-chip: rgba(15, 23, 42, 0.8);
+      --border-subtle: rgba(148, 163, 184, 0.5);
+      --text-main: #e5e7eb;
+      --text-muted: #9ca3af;
+      --danger: #f97373;
+      --success: #22c55e;
+      --progress-bg: rgba(15, 23, 42, 0.9);
+      --map-bg: radial-gradient(circle at center, #020617 0%, #020617 40%, #000 100%);
+    }
+
+    /* Forest skin */
+    body[data-skin="forest"] {
+      --accent: #22c55e;
+      --accent-soft: rgba(34, 197, 94, 0.2);
+      --accent-strong: rgba(34, 197, 94, 0.4);
+      --accent-muted: #bbf7d0;
+      --bg-elevated: rgba(6, 24, 18, 0.98);
+      --bg-chip: rgba(10, 28, 18, 0.9);
+      --border-subtle: rgba(52, 211, 153, 0.5);
+      --text-main: #e5f9ed;
+      --text-muted: #9ca3af;
+      --danger: #f97373;
+      --success: #22c55e;
+      --progress-bg: rgba(3, 18, 10, 0.95);
+      --map-bg: radial-gradient(circle at center, #022c22 0%, #052e16 40%, #020617 100%);
+    }
+
+    /* Neon / Cyber skin */
+    body[data-skin="neon"] {
+      --accent: #22d3ee;
+      --accent-soft: rgba(34, 211, 238, 0.16);
+      --accent-strong: rgba(34, 211, 238, 0.36);
+      --accent-muted: #a5f3fc;
+      --bg-elevated: rgba(10, 16, 40, 0.98);
+      --bg-chip: rgba(15, 23, 42, 0.92);
+      --border-subtle: rgba(56, 189, 248, 0.6);
+      --text-main: #e5f0ff;
+      --text-muted: #a1a1aa;
+      --danger: #fb7185;
+      --success: #4ade80;
+      --progress-bg: rgba(9, 9, 22, 0.96);
+      --map-bg: radial-gradient(circle at center, #020617 0%, #111827 45%, #020617 100%);
+    }
+
+    /* Shared skin usage */
+    .section {
+      background: var(--bg-elevated);
+      border-color: var(--border-subtle);
+      color: var(--text-main);
+    }
+
+    .chip {
+      background: var(--bg-chip);
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      color: var(--text-muted);
+    }
+
+    .accent {
+      color: var(--accent);
+    }
+
+    .muted {
+      color: var(--text-muted);
+    }
+
+    .badge {
+      background: var(--accent-soft);
+      color: var(--accent-muted);
+      border: 1px solid var(--accent-strong);
+    }
+
+    .button-primary {
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-muted) 100%);
+      color: #020617;
+    }
+
+    .button-outline {
+      border-color: var(--accent-strong);
+      color: var(--accent-muted);
+    }
+
+    .button-ghost {
+      color: var(--accent-muted);
+    }
+
+    .tab.active {
+      border-bottom-color: var(--accent);
+      color: var(--accent-muted);
+    }
+
+    .pill.active {
+      background: var(--accent-soft);
+      border-color: var(--accent-strong);
+      color: var(--accent-muted);
+    }
+
+    .progress-bar {
+      background: var(--progress-bg);
+    }
+
+    .progress-bar-fill {
+      background: linear-gradient(90deg, var(--accent) 0%, var(--accent-muted) 100%);
+    }
+
+    .map-modal-backdrop {
+      background: radial-gradient(circle at center, rgba(15, 23, 42, 0.9) 0%, rgba(0, 0, 0, 0.95) 100%);
+    }
+
+    .map-modal {
+      background: var(--map-bg);
+      border-color: var(--border-subtle);
+    }
+
+    /* =========================
+       GENERIC ELEMENTS
+       ========================= */
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.78rem;
+      padding: 4px 8px;
+      border-radius: 999px;
+    }
+
+    .chip-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 12px var(--accent);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      padding: 3px 7px;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .pill {
+      font-size: 0.75rem;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      background: rgba(15, 23, 42, 0.6);
+      cursor: pointer;
+      transition: background var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .pill-icon {
+      font-size: 0.9rem;
+      opacity: 0.8;
+    }
+
+    .pill:hover {
+      transform: translateY(-1px);
+      border-color: var(--accent-strong);
+    }
+
+    /* =========================
+       BUTTONS
+       ========================= */
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .button {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-radius: var(--radius-md);
+      border: 1px solid transparent;
+      font-size: 0.85rem;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+      font-weight: 600;
+      transition: transform var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast), border-color var(--transition-fast);
+      white-space: nowrap;
+    }
+
+    .button span {
+      font-size: 0.75rem;
+      text-transform: none;
+      letter-spacing: normal;
+      font-weight: 400;
+      opacity: 0.8;
+    }
+
+    .button-primary {
+      box-shadow: 0 0 30px rgba(249, 115, 22, 0.5);
+    }
+
+    .button-primary:hover {
+      transform: translateY(-1px) scale(1.01);
+      box-shadow: 0 0 40px rgba(249, 115, 22, 0.7);
+    }
+
+    .button-outline {
+      background: transparent;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      color: #e5e7eb;
+    }
+
+    .button-outline:hover {
+      border-color: var(--accent-strong);
+      background: rgba(15, 23, 42, 0.9);
+    }
+
+    .button-ghost {
+      background: transparent;
+      border: none;
+      color: #9ca3af;
+      padding-inline: 6px;
+    }
+
+    .button-ghost:hover {
+      color: var(--accent-muted);
+    }
+
+    .button-icon {
+      font-size: 1rem;
+    }
+
+    .button-sm {
+      padding: 6px 10px;
+      font-size: 0.75rem;
+    }
+
+    .button-pill {
+      border-radius: 999px;
+    }
+
+    .button-danger {
+      background: linear-gradient(135deg, #ef4444 0%, #fecaca 100%);
+      color: #020617;
+    }
+
+    /* =========================
+       TABS
+       ========================= */
+
+    .tabs {
+      display: flex;
+      gap: 12px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.4);
+      margin-bottom: 12px;
+    }
+
+    .tab {
+      padding: 8px 10px;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      color: #9ca3af;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tab-icon {
+      font-size: 1rem;
+      opacity: 0.8;
+    }
+
+    /* =========================
+       PROGRESS BARS
+       ========================= */
+
+    .progress-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .progress-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-size: 0.8rem;
+    }
+
+    .progress-label {
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #9ca3af;
+    }
+
+    .progress-value {
+      font-size: 0.8rem;
+      color: var(--accent-muted);
+    }
+
+    .progress-bar {
+      position: relative;
+      width: 100%;
+      height: 10px;
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid rgba(15, 23, 42, 0.9);
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      width: 0;
+      border-radius: inherit;
+      transition: width 0.35s ease-out;
+    }
+
+    .progress-bar-inner-glow {
+      position: absolute;
+      inset: 0;
+      box-shadow: 0 0 12px rgba(249, 115, 22, 0.7) inset;
+      opacity: 0.7;
+      pointer-events: none;
+    }
+
+    /* =========================
+       QUEST CARDS
+       ========================= */
+
+    .quest-card {
+      background: rgba(15, 23, 42, 0.96);
+      border-radius: var(--radius-lg);
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .quest-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at top left, rgba(249, 115, 22, 0.2), transparent 60%);
+      opacity: 0.7;
+      pointer-events: none;
+    }
+
+    .quest-card-header {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      z-index: 1;
+    }
+
+    .quest-card-title-group {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .quest-card-title {
+      font-size: 0.95rem;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+    }
+
+    .quest-card-subtitle {
+      font-size: 0.8rem;
+      color: #9ca3af;
+    }
+
+    .quest-card-metadata {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-size: 0.75rem;
+      color: #9ca3af;
+    }
+
+    .quest-card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      position: relative;
+      z-index: 1;
+      margin-top: 4px;
+    }
+
+    .quest-tag-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      font-size: 0.7rem;
+    }
+
+    .quest-tag {
+      border-radius: 999px;
+      padding: 2px 6px;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      color: #9ca3af;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* =========================
+       ACHIEVEMENTS
+       ========================= */
+
+    .achievement-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 12px;
+    }
+
+    .achievement-card {
+      background: rgba(15, 23, 42, 0.92);
+      border-radius: var(--radius-md);
+      padding: 10px;
+      border: 1px solid rgba(148, 163, 184, 0.55);
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .achievement-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 999px;
+      background: radial-gradient(circle at top, var(--accent) 0%, var(--accent-soft) 45%, transparent 80%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #020617;
+      font-size: 1.2rem;
+      box-shadow: 0 0 16px var(--accent-strong);
+      flex-shrink: 0;
+    }
+
+    .achievement-body {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .achievement-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .achievement-meta {
+      font-size: 0.75rem;
+      color: #9ca3af;
+    }
+
+    .achievement-ribbon {
+      position: absolute;
+      top: 8px;
+      right: -32px;
+      transform: rotate(35deg);
+      background: var(--accent-strong);
+      color: #020617;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      padding: 2px 32px;
+      letter-spacing: 0.1em;
+    }
+
+    .achievement-locked {
+      opacity: 0.6;
+      filter: grayscale(0.4);
+    }
+
+    /* =========================
+       MAP MODAL
+       ========================= */
+
+    .map-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+    }
+
+    .map-modal-backdrop.open {
+      display: flex;
+    }
+
+    .map-modal {
+      width: min(720px, 95vw);
+      max-height: 80vh;
+      border-radius: 20px;
+      border: 1px solid;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .map-modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.4);
+      backdrop-filter: blur(18px);
+      background: linear-gradient(to right, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.7));
+    }
+
+    .map-modal-title {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .map-modal-title-main {
+      font-size: 0.9rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .map-modal-title-sub {
+      font-size: 0.78rem;
+      color: #9ca3af;
+    }
+
+    .map-modal-body {
+      position: relative;
+      padding: 12px 16px 16px;
+      display: flex;
+      gap: 12px;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .map-canvas {
+      position: relative;
+      border-radius: 16px;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      background: radial-gradient(circle at top, rgba(15, 23, 42, 0.9) 0%, transparent 55%), radial-gradient(circle at center, rgba(15, 23, 42, 0.95) 0%, rgba(15, 23, 42, 0.8) 50%, transparent 85%);
+      flex: 2;
+      overflow: hidden;
+    }
+
+    .map-grid {
+      position: absolute;
+      inset: 0;
+      background-image: linear-gradient(to right, rgba(148, 163, 184, 0.08) 1px, transparent 1px), linear-gradient(to bottom, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+      background-size: 28px 28px;
+      opacity: 0.7;
+      pointer-events: none;
+    }
+
+    .map-orbit {
+      position: absolute;
+      inset: 16%;
+      border-radius: 999px;
+      border: 1px dashed rgba(148, 163, 184, 0.4);
+    }
+
+    .map-orbit:nth-child(2) {
+      inset: 28%;
+      border-style: solid;
+    }
+
+    .map-orbit:nth-child(3) {
+      inset: 40%;
+      border-style: dashed;
+      opacity: 0.7;
+    }
+
+    .map-node {
+      position: absolute;
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      border: 2px solid var(--accent-muted);
+      background: radial-gradient(circle at top, var(--accent) 0%, rgba(15, 23, 42, 0.95) 70%);
+      box-shadow: 0 0 16px var(--accent-strong);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      color: #020617;
+      cursor: pointer;
+      transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
+    }
+
+    .map-node:hover {
+      transform: scale(1.08);
+      box-shadow: 0 0 20px var(--accent-strong);
+    }
+
+    .map-node.current {
+      width: 26px;
+      height: 26px;
+      border-width: 3px;
+    }
+
+    .map-node.locked {
+      border-color: rgba(148, 163, 184, 0.7);
+      background: radial-gradient(circle at top, rgba(148, 163, 184, 0.95) 0%, rgba(15, 23, 42, 0.95) 70%);
+      box-shadow: none;
+      color: #020617;
+    }
+
+    .map-node:last-child::after {
+      content: "★";
+      position: absolute;
+      top: -10px;
+      right: -8px;
+      font-size: 0.7rem;
+      color: var(--accent-muted);
+      text-shadow: 0 0 8px var(--accent);
+    }
+
+    .map-sidebar {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 0.8rem;
+    }
+
+    .map-waypoint-title {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--accent-muted);
+    }
+
+    .map-waypoint-description {
+      font-size: 0.8rem;
+      color: #9ca3af;
+    }
+
+    .map-waypoint-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .map-waypoint-meta-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 7px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      font-size: 0.75rem;
+      color: #9ca3af;
+    }
+
+    .map-modal-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px 14px;
+      border-top: 1px solid rgba(148, 163, 184, 0.4);
+      background: rgba(15, 23, 42, 0.9);
+      font-size: 0.8rem;
+    }
+
+    /* =========================
+       NOTIFICATIONS / TOAST
+       ========================= */
+
+    .toast-stack {
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 60;
+    }
+
+    .toast {
+      background: rgba(15, 23, 42, 0.96);
+      border-radius: var(--radius-md);
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      padding: 8px 10px;
+      min-width: 220px;
+      max-width: 320px;
+      display: flex;
+      gap: 8px;
+      font-size: 0.8rem;
+      box-shadow: 0 14px 40px rgba(0, 0, 0, 0.9);
+      opacity: 0;
+      transform: translateY(8px);
+      pointer-events: none;
+      transition: opacity 0.18s ease-out, transform 0.18s ease-out;
+    }
+
+    .toast.visible {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
+    .toast-accent-bar {
+      width: 3px;
+      border-radius: 999px;
+      background: linear-gradient(to bottom, var(--accent), var(--accent-muted));
+    }
+
+    .toast-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .toast-title {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .toast-message {
+      color: #9ca3af;
+    }
+
+    .toast-close {
+      background: none;
+      border: none;
+      color: #6b7280;
+      cursor: pointer;
+      padding: 0;
+      font-size: 1rem;
+    }
+
+    /* =========================
+       SKIN SWITCHER / TOOLBAR
+       ========================= */
+
+    .top-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 4px;
+    }
+
+    .top-toolbar-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .top-toolbar-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.8rem;
+      color: #9ca3af;
+    }
+
+    select.skin-select {
+      background: rgba(15, 23, 42, 0.95);
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      color: #e5e7eb;
+      font-size: 0.8rem;
+      padding: 6px 24px 6px 10px;
+      appearance: none;
+      position: relative;
+    }
+
+    .skin-select-wrapper {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .skin-select-wrapper::after {
+      content: "▼";
+      position: absolute;
+      right: 7px;
+      font-size: 0.7rem;
+      pointer-events: none;
+      color: #9ca3af;
+    }
+
+    /* =========================
+       RESPONSIVE
+       ========================= */
+
+    @media (max-width: 768px) {
+      .map-modal-body {
+        flex-direction: column;
+      }
+
+      .map-sidebar {
+        order: -1;
+      }
+
+      .top-toolbar {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .top-toolbar-right {
+        align-self: stretch;
+        justify-content: space-between;
+      }
+    }
+  </style>
+</head>
+<body data-skin="default">
+  <div class="root">
+    <!-- TOP TOOLBAR / SKIN SWITCHER -->
+    <header class="top-toolbar">
+      <div class="top-toolbar-left">
+        <div class="chip">
+          <div class="chip-dot"></div>
+          <span>Quest Console UI Kit</span>
+        </div>
+        <div class="badge">
+          <span>Build · Play · Reskin</span>
+        </div>
+      </div>
+      <div class="top-toolbar-right">
+        <span>Story skin:</span>
+        <div class="skin-select-wrapper">
+          <select class="skin-select" id="skinSelect">
+            <option value="default">Oracle / Arcane</option>
+            <option value="forest">Forest Realm</option>
+            <option value="neon">Neon / Cyber</option>
+          </select>
+        </div>
+      </div>
+    </header>
+
+    <!-- QUEST CONSOLE SAMPLE -->
+    <section class="section">
+      <div class="section-header">
+        <div class="section-header-title">
+          <h1>The Oracle Reveals</h1>
+          <p class="section-subtitle">Feed time, mood, and intent; the console returns a quest you can pass, accept, or refine.[file:1]</p>
+        </div>
+        <div class="pill-row">
+          <button class="pill active" type="button">
+            <span class="pill-icon">●</span>
+            Active Quest
+          </button>
+          <button class="pill" type="button">
+            <span class="pill-icon">∞</span>
+            Archive
+          </button>
+          <button class="pill" type="button">
+            <span class="pill-icon">⚙</span>
+            Settings
+          </button>
+        </div>
+      </div>
+
+      <div class="row">
+        <!-- LEFT: Current Quest Card -->
+        <div class="col">
+          <article class="quest-card">
+            <div class="quest-card-header">
+              <div class="quest-card-title-group">
+                <div class="quest-card-title accent">Decode tonight's vibe</div>
+                <div class="quest-card-subtitle">Design a micro‐ritual to mark this exact moment.[file:1]</div>
+              </div>
+              <div class="pill">
+                <span class="pill-icon">⏱</span>
+                35 min
+              </div>
+            </div>
+
+            <div class="quest-card-metadata">
+              <span>Difficulty: <span class="accent">Low‐Medium</span></span>
+              <span>Energy: <span class="accent">2 / 5</span></span>
+              <span>Location: Any quiet corner</span>
+            </div>
+
+            <div class="progress-group">
+              <div class="progress-row">
+                <div class="progress-label">Quest Progress</div>
+                <div class="progress-value" id="questProgressValue">40%</div>
+              </div>
+              <div class="progress-bar">
+                <div class="progress-bar-fill" id="questProgressBar"></div>
+                <div class="progress-bar-inner-glow"></div>
+              </div>
+            </div>
+
+            <div class="quest-card-footer">
+              <div class="quest-tag-row">
+                <span class="quest-tag">
+                  <span>🎧</span>
+                  Sound
+                </span>
+                <span class="quest-tag">
+                  <span>🕯</span>
+                  Ambient
+                </span>
+                <span class="quest-tag">
+                  <span>✍</span>
+                  Journal
+                </span>
+              </div>
+              <div class="button-row">
+                <button class="button button-outline button-sm" type="button" id="passQuestButton">
+                  <span class="button-icon">⟳</span>
+                  Pass
+                </button>
+                <button class="button button-primary button-sm" type="button" id="acceptQuestButton">
+                  <span class="button-icon">✔</span>
+                  Accept
+                </button>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <!-- RIGHT: Controls + Secondary UI -->
+        <div class="col">
+          <div class="tabs">
+            <button class="tab active" type="button" data-tab="journal">
+              <span class="tab-icon">✍</span>
+              Journal
+            </button>
+            <button class="tab" type="button" data-tab="map">
+              <span class="tab-icon">🗺</span>
+              Map
+            </button>
+            <button class="tab" type="button" data-tab="packs">
+              <span class="tab-icon">⟡</span>
+              Packs
+            </button>
+          </div>
+
+          <div id="tabContentJournal">
+            <p class="muted">
+              Capture one sentence about where you are arriving from and one about where you want to be headed next.[file:1]
+            </p>
+            <textarea
+              id="journalArea"
+              style="width: 100%; min-height: 110px; border-radius: 10px; border: 1px solid rgba(148, 163, 184, 0.6); background: rgba(15, 23, 42, 0.9); color: #e5e7eb; padding: 8px; font-size: 0.85rem; resize: vertical;"
+              placeholder="Tonight I am arriving from..."
+            ></textarea>
+            <div style="margin-top: 8px; display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 0.75rem;">
+              <span class="muted">Completed quests become packs you can view or export later.[file:1]</span>
+              <div class="button-row">
+                <button class="button button-ghost button-sm" type="button">
+                  <span class="button-icon">⬇</span>
+                  Export JSON
+                </button>
+                <button class="button button-outline button-sm" type="button">
+                  Save Note
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div id="tabContentMap" style="display: none;">
+            <p class="muted">
+              The quest map charts the sequence of small experiments you run across evenings, weeks, and seasons.[file:1]
+            </p>
+            <button class="button button-outline button-sm" type="button" id="openMapButton">
+              <span class="button-icon">🗺</span>
+              Open Map Modal
+            </button>
+          </div>
+
+          <div id="tabContentPacks" style="display: none;">
+            <p class="muted">
+              Packs bundle completed quests, notes, and media into small capsules you can revisit or remix later.[file:1]
+            </p>
+            <div class="quest-tag-row" style="margin-top: 6px;">
+              <span class="quest-tag">
+                <span>⟡</span>
+                Night Walk Pack
+              </span>
+              <span class="quest-tag">
+                <span>⟡</span>
+                Solitude Pack
+              </span>
+              <span class="quest-tag">
+                <span>⟡</span>
+                Creative Reset Pack
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ACHIEVEMENTS SECTION -->
+    <section class="section">
+      <div class="section-header">
+        <div class="section-header-title">
+          <h2>Achievements</h2>
+          <p class="section-subtitle">Small trophies unlock as you experiment with different moods, time blocks, and textures.[file:1]</p>
+        </div>
+        <span class="muted" style="font-size: 0.8rem;">3 / 9 unlocked</span>
+      </div>
+
+      <div class="achievement-grid">
+        <article class="achievement-card">
+          <div class="achievement-icon">☾</div>
+          <div class="achievement-body">
+            <div class="achievement-title">First Night Logged</div>
+            <div class="achievement-meta">Complete one quest after sunset and add a single line to your log.</div>
+          </div>
+          <div class="achievement-ribbon">Unlocked</div>
+        </article>
+
+        <article class="achievement-card">
+          <div class="achievement-icon">⏱</div>
+          <div class="achievement-body">
+            <div class="achievement-title">Micro Ritual</div>
+            <div class="achievement-meta">Finish a quest in under 25 minutes without checking another app.</div>
+          </div>
+          <div class="achievement-ribbon">Unlocked</div>
+        </article>
+
+        <article class="achievement-card achievement-locked">
+          <div class="achievement-icon">✶</div>
+          <div class="achievement-body">
+            <div class="achievement-title">Seasonal Arc</div>
+            <div class="achievement-meta">Complete 12 quests across one season and export them as a single pack.[file:1]</div>
+          </div>
+          <div class="achievement-ribbon">Hidden</div>
+        </article>
+
+        <article class="achievement-card achievement-locked">
+          <div class="achievement-icon">∞</div>
+          <div class="achievement-body">
+            <div class="achievement-title">Long Game</div>
+            <div class="achievement-meta">Return to the console every week for three consecutive months.[file:1]</div>
+          </div>
+          <div class="achievement-ribbon">Locked</div>
+        </article>
+      </div>
+    </section>
+
+    <!-- SYSTEM STATUS / SECONDARY PROGRESS -->
+    <section class="section">
+      <div class="section-header">
+        <div class="section-header-title">
+          <h2>Session Status</h2>
+          <p class="section-subtitle">Glanceable bars track progress across the current night, the week, and your orbit of experiments.[file:1]</p>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col">
+          <div class="progress-group">
+            <div class="progress-row">
+              <div class="progress-label">Tonight's quest</div>
+              <div class="progress-value" id="sessionProgressValue">60%</div>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-bar-fill" id="sessionProgressBar"></div>
+              <div class="progress-bar-inner-glow"></div>
+            </div>
+          </div>
+        </div>
+        <div class="col">
+          <div class="progress-group">
+            <div class="progress-row">
+              <div class="progress-label">Week streak</div>
+              <div class="progress-value" id="weeklyProgressValue">3 / 7</div>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-bar-fill" id="weeklyProgressBar"></div>
+              <div class="progress-bar-inner-glow"></div>
+            </div>
+          </div>
+        </div>
+        <div class="col">
+          <div class="progress-group">
+            <div class="progress-row">
+              <div class="progress-label">Season arc</div>
+              <div class="progress-value" id="seasonProgressValue">25%</div>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-bar-fill" id="seasonProgressBar"></div>
+              <div class="progress-bar-inner-glow"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- MAP MODAL -->
+  <div class="map-modal-backdrop" id="mapModal">
+    <div class="map-modal">
+      <header class="map-modal-header">
+        <div class="map-modal-title">
+          <div class="map-modal-title-main">Quest Map · Evening Orbit</div>
+          <div class="map-modal-title-sub">Each node is a small experiment in how you spend your time tonight.[file:1]</div>
+        </div>
+        <button class="button button-ghost button-sm" type="button" id="closeMapButton">
+          <span class="button-icon">✕</span>
+          Close
+        </button>
+      </header>
+
+      <div class="map-modal-body">
+        <div class="map-canvas">
+          <div class="map-grid"></div>
+          <div class="map-orbit"></div>
+          <div class="map-orbit"></div>
+          <div class="map-orbit"></div>
+
+          <!-- Map nodes -->
+          <button
+            type="button"
+            class="map-node current"
+            data-waypoint="current"
+            style="top: 48%; left: 48%;"
+          >
+            0
+          </button>
+          <button
+            type="button"
+            class="map-node"
+            data-waypoint="explore"
+            style="top: 18%; left: 62%;"
+          >
+            1
+          </button>
+          <button
+            type="button"
+            class="map-node"
+            data-waypoint="reflect"
+            style="top: 72%; left: 30%;"
+          >
+            2
+          </button>
+          <button
+            type="button"
+            class="map-node"
+            data-waypoint="share"
+            style="top: 26%; left: 26%;"
+          >
+            3
+          </button>
+          <button
+            type="button"
+            class="map-node locked"
+            data-waypoint="season"
+            style="top: 70%; left: 72%;"
+          >
+            4
+          </button>
+        </div>
+
+        <aside class="map-sidebar" id="mapSidebar">
+          <div>
+            <div class="map-waypoint-title" id="mapWaypointTitle">Current node</div>
+            <p class="map-waypoint-description" id="mapWaypointDescription">
+              You are here. Take a breath, notice where you are sitting, and scan for one small next move that would feel a little kinder.[file:1]
+            </p>
+            <div class="map-waypoint-meta" id="mapWaypointMeta">
+              <span class="map-waypoint-meta-item">
+                <span>Energy</span>
+                <strong>2 / 5</strong>
+              </span>
+              <span class="map-waypoint-meta-item">
+                <span>Duration</span>
+                <strong>5 min check‐in</strong>
+              </span>
+            </div>
+          </div>
+          <div style="margin-top: auto;">
+            <div class="progress-group">
+              <div class="progress-row">
+                <div class="progress-label">Orbit completion</div>
+                <div class="progress-value">40%</div>
+              </div>
+              <div class="progress-bar">
+                <div class="progress-bar-fill" style="width: 40%;"></div>
+                <div class="progress-bar-inner-glow"></div>
+              </div>
+            </div>
+            <div style="margin-top: 8px; display: flex; justify-content: flex-end;">
+              <button class="button button-primary button-sm" type="button">
+                Jump to node
+              </button>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <footer class="map-modal-footer">
+        <span class="muted">Tip: You can reskin this map to match each chapter of the story.[file:1]</span>
+        <div class="button-row">
+          <button class="button button-outline button-sm" type="button">
+            Export Path
+          </button>
+          <button class="button button-primary button-sm" type="button">
+            Set as Active Route
+          </button>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <!-- TOAST STACK -->
+  <div class="toast-stack">
+    <div class="toast" id="toast">
+      <div class="toast-accent-bar"></div>
+      <div class="toast-content">
+        <div class="toast-title">Quest updated</div>
+        <div class="toast-message" id="toastMessage">Your quest was updated.</div>
+      </div>
+      <button class="toast-close" type="button" id="toastCloseButton">✕</button>
+    </div>
+  </div>
+
+  <script>
+    // =========================
+    // SKIN SWITCHING
+    // =========================
+    const skinSelect = document.getElementById("skinSelect");
+    skinSelect.addEventListener("change", () => {
+      document.body.setAttribute("data-skin", skinSelect.value);
+    });
+
+    // =========================
+    // TABS
+    // =========================
+    const tabs = document.querySelectorAll(".tab");
+    const tabContentMap = {
+      journal: document.getElementById("tabContentJournal"),
+      map: document.getElementById("tabContentMap"),
+      packs: document.getElementById("tabContentPacks")
+    };
+
+    tabs.forEach(tab => {
+      tab.addEventListener("click", () => {
+        tabs.forEach(t => t.classList.remove("active"));
+        tab.classList.add("active");
+        const target = tab.getAttribute("data-tab");
+        Object.entries(tabContentMap).forEach(([key, el]) => {
+          el.style.display = key === target ? "block" : "none";
+        });
+      });
+    });
+
+    // =========================
+    // PROGRESS BARS (SAMPLE VALUES)
+    // =========================
+    function setProgress(id, value) {
+      const el = document.getElementById(id);
+      if (el) el.style.width = value + "%";
+    }
+
+    setProgress("questProgressBar", 40);
+    setProgress("sessionProgressBar", 60);
+    setProgress("weeklyProgressBar", (3 / 7) * 100);
+    setProgress("seasonProgressBar", 25);
+
+    // =========================
+    // MAP MODAL
+    // =========================
+    const mapModal = document.getElementById("mapModal");
+    const openMapButton = document.getElementById("openMapButton");
+    const closeMapButton = document.getElementById("closeMapButton");
+
+    openMapButton.addEventListener("click", () => {
+      mapModal.classList.add("open");
+    });
+
+    closeMapButton.addEventListener("click", () => {
+      mapModal.classList.remove("open");
+    });
+
+    mapModal.addEventListener("click", (event) => {
+      if (event.target === mapModal) {
+        mapModal.classList.remove("open");
+      }
+    });
+
+    // Map waypoint content
+    const waypointContent = {
+      current: {
+        title: "Current node",
+        description:
+          "You are here. Take a breath, notice what today felt like, and decide on one tiny next experiment.[file:1]",
+        meta: [
+          "Energy 2 / 5",
+          "Duration 5 min check‐in"
+        ]
+      },
+      explore: {
+        title: "Explore",
+        description:
+          "Step outside or switch rooms. Notice three details you usually ignore and label them quietly.[file:1]",
+        meta: [
+          "Energy 3 / 5",
+          "Duration 10–15 min"
+        ]
+      },
+      reflect: {
+        title: "Reflect",
+        description:
+          "Return to your note and write one sentence about what surprised you tonight.[file:1]",
+        meta: [
+          "Energy 2 / 5",
+          "Duration 10 min"
+        ]
+      },
+      share: {
+        title: "Share",
+        description:
+          "Send one sentence from your log to a friend or to your future self via email or note.[file:1]",
+        meta: [
+          "Energy 3 / 5",
+          "Duration 5–10 min"
+        ]
+      },
+      season: {
+        title: "Season node",
+        description:
+          "A future node that only unlocks after you have logged a few dozen evenings across this chapter.[file:1]",
+        meta: [
+          "Energy 3 / 5",
+          "Duration N/A"
+        ]
+      }
+    };
+
+    const mapWaypointTitle = document.getElementById("mapWaypointTitle");
+    const mapWaypointDescription = document.getElementById("mapWaypointDescription");
+    const mapWaypointMeta = document.getElementById("mapWaypointMeta");
+
+    document.querySelectorAll(".map-node").forEach(node => {
+      node.addEventListener("click", () => {
+        const key = node.getAttribute("data-waypoint");
+        const data = waypointContent[key];
+        if (!data) return;
+        mapWaypointTitle.textContent = data.title;
+        mapWaypointDescription.textContent = data.description;
+        mapWaypointMeta.innerHTML = "";
+        data.meta.forEach(item => {
+          const span = document.createElement("span");
+          span.className = "map-waypoint-meta-item";
+          span.innerHTML = "<span></span><strong>" + item + "</strong>";
+          mapWaypointMeta.appendChild(span);
+        });
+      });
+    });
+
+    // =========================
+    // TOAST / NOTIFICATIONS
+    // =========================
+    const toast = document.getElementById("toast");
+    const toastMessage = document.getElementById("toastMessage");
+    const toastCloseButton = document.getElementById("toastCloseButton");
+    let toastTimeout;
+
+    function showToast(message) {
+      toastMessage.textContent = message;
+      toast.classList.add("visible");
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.remove("visible");
+      }, 2600);
+    }
+
+    toastCloseButton.addEventListener("click", () => {
+      toast.classList.remove("visible");
+    });
+
+    // =========================
+    // QUEST BUTTON ACTIONS
+    // =========================
+    const passQuestButton = document.getElementById("passQuestButton");
+    const acceptQuestButton = document.getElementById("acceptQuestButton");
+    const questProgressValue = document.getElementById("questProgressValue");
+
+    passQuestButton.addEventListener("click", () => {
+      setProgress("questProgressBar", 0);
+      questProgressValue.textContent = "0%";
+      showToast("You passed this quest. The oracle will roll a new one next.");
+    });
+
+    acceptQuestButton.addEventListener("click", () => {
+      setProgress("questProgressBar", 100);
+      questProgressValue.textContent = "100%";
+      showToast("Quest locked in. Mark your first move and step into it.");
+    });
+  </script>
+</body>
+</html>
+```
+
+Sources
+[1] Quest_Bot_100.html https://ppl-ai-file-upload.s3.amazonaws.com/web/direct-files/attachments/166691725/57ce367f-d2a6-4c81-b23d-31c17db7d382/Quest_Bot_100.html

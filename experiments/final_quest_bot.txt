@@ -1,0 +1,917 @@
+Yep. I unpacked Question Bot.zip and here’s what you actually have, what’s missing, and then a single Copilot paste that “finishes the wiring” (Worker + D1 + endpoints + prompts) and a small HTML patch that makes your best HTML file talk to it.
+
+What’s in your zip (quick audit)
+
+Inside Question Bot/:
+	•	Quest_Bot_100... .html → closest to “real app”; already has a fetch() and an AI_ENDPOINT placeholder.
+	•	quest_bot_sample.html → bigger “story-skinnable” mock; mostly local-first, not wired to APIs.
+	•	Quest_Bot_elementa.html → UI kit / elements.
+	•	Quest_runner.json → great: your quest schema sample (we’ll use it as the contract).
+	•	quest_bot_skin.json → not valid JSON (smart quotes) = reference doc.
+	•	quest_bot_consumer.txt, component_skin_swap.txt, quest_bot_talk.txt → documentation / drafts.
+
+So: you have UI and schema, but you’re missing the backend endpoints and the wiring glue.
+
+⸻
+
+✅ COPILOT PASTE — “Unpack + Wire Everything” (Worker + D1 + Endpoints + Gold Prompt)
+
+Paste this into a new Cloudflare Worker project (or add these files to your existing Worker repo).
+It includes:
+	•	/api/ping
+	•	/api/recon/add
+	•	/api/recon/list
+	•	/api/modules/list
+	•	/api/quest/generate
+	•	Gold module extraction prompt
+	•	server-side module validation (anti-fluff)
+
+Create files exactly as named below.
+
+// ================================
+// FILE: wrangler.toml
+// ================================
+name = "quest-handler"
+main = "src/worker.js"
+compatibility_date = "2024-11-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "questing"
+database_id = "REPLACE_ME"
+
+[vars]
+AI_PROVIDER = "openrouter"
+OPENROUTER_API_KEY = "REPLACE_ME"
+OPENROUTER_MODEL = "anthropic/claude-3.5-sonnet"
+
+
+// ================================
+// FILE: migrations/0001_init.sql
+// ================================
+CREATE TABLE IF NOT EXISTS recon_items (
+  id TEXT PRIMARY KEY,
+  created_at TEXT NOT NULL,
+  type TEXT NOT NULL,            -- url | text | map_snippet
+  title TEXT,
+  source_url TEXT,
+  raw_text TEXT,
+  parse_status TEXT NOT NULL,    -- new | parsed | failed
+  quality_score REAL DEFAULT 0.5,
+  quality_notes TEXT
+);
+
+CREATE TABLE IF NOT EXISTS modules (
+  id TEXT PRIMARY KEY,
+  created_at TEXT NOT NULL,
+  title TEXT NOT NULL,
+  summary TEXT NOT NULL,
+  tags TEXT NOT NULL,            -- JSON array string
+  vibe TEXT,
+  weather_fit TEXT,              -- JSON array string
+  duration_fit TEXT,             -- JSON array string
+  range_fit TEXT,                -- JSON array string
+  location_hint TEXT,
+  confidence REAL DEFAULT 0.6,
+  payload TEXT NOT NULL          -- JSON
+);
+
+CREATE TABLE IF NOT EXISTS module_sources (
+  module_id TEXT NOT NULL,
+  recon_id TEXT NOT NULL,
+  note TEXT,
+  PRIMARY KEY (module_id, recon_id)
+);
+
+CREATE TABLE IF NOT EXISTS feedback (
+  id TEXT PRIMARY KEY,
+  created_at TEXT NOT NULL,
+  kind TEXT NOT NULL,            -- recon | module | quest
+  target_id TEXT NOT NULL,
+  rating INTEGER,
+  note TEXT,
+  action TEXT                    -- keep | revise | ignore | conflict
+);
+
+
+// ================================
+// FILE: src/worker.js
+// ================================
+export default {
+  async fetch(req, env) {
+    const url = new URL(req.url);
+
+    // CORS (MakerApp + Telegram WebApp friendly)
+    if (req.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
+
+    try {
+      // Health
+      if (req.method === "GET" && url.pathname === "/api/ping") {
+        return cors(json({ ok: true, ts: new Date().toISOString() }));
+      }
+
+      // Recon
+      if (req.method === "POST" && url.pathname === "/api/recon/add") {
+        return cors(await addRecon(req, env));
+      }
+      if (req.method === "GET" && url.pathname === "/api/recon/list") {
+        return cors(await listRecon(url, env));
+      }
+
+      // Modules
+      if (req.method === "GET" && url.pathname === "/api/modules/list") {
+        return cors(await listModules(url, env));
+      }
+
+      // Quest
+      if (req.method === "POST" && url.pathname === "/api/quest/generate") {
+        return cors(await generateQuest(req, env));
+      }
+
+      return cors(new Response("Not found", { status: 404 }));
+    } catch (err) {
+      return cors(json({ ok: false, error: String(err?.message || err) }, 500));
+    }
+  }
+};
+
+/* -----------------------------
+   Recon: add + module extraction
+------------------------------ */
+async function addRecon(req, env) {
+  const body = await req.json();
+  const id = crypto.randomUUID();
+  const created = new Date().toISOString();
+
+  const type = (body.type || "text").toLowerCase();
+  const title = (body.title || "").slice(0, 160);
+  const sourceUrl = (body.url || "").slice(0, 2000);
+
+  let text = (body.text || "");
+  if (type === "url") {
+    if (!sourceUrl) return json({ ok: false, error: "Missing url" }, 400);
+    const fetched = await fetch(sourceUrl, { headers: { "User-Agent": "QuestHandler/1.0" } });
+    if (!fetched.ok) return json({ ok: false, error: "Failed to fetch URL" }, 400);
+    text = await fetched.text();
+  }
+  if (!text || text.trim().length < 10) {
+    return json({ ok: false, error: "No usable recon text" }, 400);
+  }
+
+  // Run AI extraction (gold prompt)
+  const extracted = await extractModulesFromRecon(text, env);
+
+  // Store recon with quality notes
+  await env.DB.prepare(`
+    INSERT INTO recon_items (id, created_at, type, title, source_url, raw_text, parse_status, quality_score, quality_notes)
+    VALUES (?, ?, ?, ?, ?, ?, 'parsed', ?, ?)
+  `).bind(
+    id, created, type, title, sourceUrl, text,
+    extracted.quality_score ?? 0.5,
+    extracted.quality_notes ?? ""
+  ).run();
+
+  let createdCount = 0;
+
+  for (const m of (extracted.modules || [])) {
+    if (!isModuleValid(m)) continue; // server-side anti-fluff gate
+
+    const mid = crypto.randomUUID();
+
+    await env.DB.prepare(`
+      INSERT INTO modules (id, created_at, title, summary, tags, vibe, weather_fit, duration_fit, range_fit, location_hint, confidence, payload)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      mid, created,
+      safeStr(m.title, 120),
+      safeStr(m.summary, 400),
+      JSON.stringify(m.tags || []),
+      m.vibe || null,
+      JSON.stringify(m.weather_fit || ["auto"]),
+      JSON.stringify(m.duration_fit || ["60m"]),
+      JSON.stringify(m.range_fit || ["short-drive"]),
+      safeStr(m.location_hint || "", 240),
+      clamp01(m.confidence ?? 0.6),
+      JSON.stringify(m.payload || {})
+    ).run();
+
+    await env.DB.prepare(`
+      INSERT INTO module_sources (module_id, recon_id, note)
+      VALUES (?, ?, ?)
+    `).bind(mid, id, "Derived from recon").run();
+
+    createdCount++;
+  }
+
+  return json({ ok: true, recon_id: id, modules_created: createdCount });
+}
+
+async function listRecon(url, env) {
+  const limit = clampInt(url.searchParams.get("limit"), 1, 200, 50);
+
+  const rows = await env.DB.prepare(`
+    SELECT id, created_at, type, title, source_url, quality_score, quality_notes
+    FROM recon_items
+    ORDER BY created_at DESC
+    LIMIT ?
+  `).bind(limit).all();
+
+  const mc = await env.DB.prepare(`SELECT COUNT(*) AS n FROM modules`).first();
+  return json({ ok: true, items: rows.results || [], module_count: mc?.n || 0 });
+}
+
+/* -----------------------------
+   Modules: list (+ optional tag filter)
+------------------------------ */
+async function listModules(url, env) {
+  const limit = clampInt(url.searchParams.get("limit"), 1, 200, 80);
+  const tag = (url.searchParams.get("tag") || "").trim().toLowerCase();
+
+  let sql = `SELECT id, created_at, title, summary, tags, vibe, weather_fit, duration_fit, range_fit, location_hint, confidence, payload
+             FROM modules
+             ORDER BY created_at DESC
+             LIMIT ?`;
+
+  let bind = [limit];
+
+  const rows = await env.DB.prepare(sql).bind(...bind).all();
+  let items = (rows.results || []).map(r => ({
+    ...r,
+    tags: safeJson(r.tags, []),
+    weather_fit: safeJson(r.weather_fit, []),
+    duration_fit: safeJson(r.duration_fit, []),
+    range_fit: safeJson(r.range_fit, []),
+    payload: safeJson(r.payload, {})
+  }));
+
+  if (tag) {
+    items = items.filter(m => (m.tags || []).map(x => String(x).toLowerCase()).includes(tag));
+  }
+
+  return json({ ok: true, items });
+}
+
+/* -----------------------------
+   Quest: generate
+------------------------------ */
+async function generateQuest(req, env) {
+  const body = await req.json();
+  const inputs = body.inputs || {};
+  const avoid = Array.isArray(body.avoid_titles) ? body.avoid_titles : [];
+
+  // pull top modules
+  const rows = await env.DB.prepare(`
+    SELECT id, title, summary, tags, vibe, weather_fit, duration_fit, range_fit, location_hint, confidence, payload
+    FROM modules
+    ORDER BY confidence DESC, created_at DESC
+    LIMIT 16
+  `).all();
+
+  const modules = (rows.results || []).map(m => ({
+    id: m.id,
+    title: m.title,
+    summary: m.summary,
+    tags: safeJson(m.tags, []),
+    vibe: m.vibe,
+    weather_fit: safeJson(m.weather_fit, []),
+    duration_fit: safeJson(m.duration_fit, []),
+    range_fit: safeJson(m.range_fit, []),
+    location_hint: m.location_hint,
+    confidence: m.confidence,
+    payload: safeJson(m.payload, {})
+  }));
+
+  const promptPayload = { inputs, avoid_titles: avoid, modules };
+
+  const quest = await callAIQuest(promptPayload, env);
+
+  // minimal enforcement: ensure core keys exist
+  quest.id = quest.id || crypto.randomUUID();
+  quest.created_at = quest.created_at || new Date().toISOString();
+  quest.status = quest.status || "proposed";
+  quest.inputs = quest.inputs || inputs;
+
+  return json(quest);
+}
+
+/* -----------------------------
+   AI: module extraction (GOLD PROMPT)
+------------------------------ */
+async function extractModulesFromRecon(text, env) {
+  const user = GOLD_MODULE_PROMPT.replace("[PASTE RECON TEXT HERE]", text.slice(0, 24000));
+  const out = await callAIJson(user, env);
+  // normalize
+  return {
+    quality_score: clamp01(out.quality_score ?? 0.5),
+    quality_notes: String(out.quality_notes || "").slice(0, 900),
+    signals: out.signals || {},
+    modules: Array.isArray(out.modules) ? out.modules : []
+  };
+}
+
+/* -----------------------------
+   AI: quest generator
+------------------------------ */
+async function callAIQuest(payload, env) {
+  const user = JSON.stringify(payload);
+  const out = await callAIJson(QUEST_AUTHOR_PROMPT + "\n\nINPUT:\n" + user, env);
+  return out;
+}
+
+async function callAIJson(userContent, env) {
+  if ((env.AI_PROVIDER || "openrouter") !== "openrouter") {
+    throw new Error("Only openrouter wired in this paste (easy to swap later).");
+  }
+  const model = env.OPENROUTER_MODEL || "anthropic/claude-3.5-sonnet";
+
+  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${env.OPENROUTER_API_KEY}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      model,
+      messages: [
+        { role: "system", content: "You output ONLY valid JSON. No markdown. No extra text." },
+        { role: "user", content: userContent }
+      ],
+      temperature: 0.6
+    })
+  });
+
+  const data = await res.json();
+  const content = data?.choices?.[0]?.message?.content;
+  if (!content) throw new Error("AI returned empty response");
+
+  // Attempt strict JSON parse
+  try {
+    return JSON.parse(content);
+  } catch (e) {
+    // salvage: find first/last braces
+    const a = content.indexOf("{");
+    const b = content.lastIndexOf("}");
+    if (a >= 0 && b > a) return JSON.parse(content.slice(a, b + 1));
+    throw new Error("AI did not return valid JSON");
+  }
+}
+
+/* -----------------------------
+   Prompts
+------------------------------ */
+const QUEST_AUTHOR_PROMPT = `
+You are THE HANDLER.
+You design memorable, specific, real-world adventures for a parent and child.
+
+Hard bans:
+- No generic quests (“go for a walk”, “find 5 things”, “do something fun outside”).
+- No filler scavenger hunts.
+- Avoid vague steps. Prefer named places or strong location hints.
+- Safe, legal, kid-friendly. No trespassing.
+
+Style:
+- Calm. Cryptic. Short sentences.
+- Frame quests as operations.
+- Side quests are optional intelligence.
+
+Output ONLY JSON matching the Quest Runner schema:
+{
+  id, created_at, status,
+  inputs:{time,weather,vibe,range,where,constraints,party},
+  title, hook, est_duration, theme,
+  anchor:{name,lat,lng,travel_minutes},
+  primary:[{id,text,primary,idx,done,xp}],
+  side:[{id,text,primary,idx,done,xp}],
+  artifacts:[{id,type,title,text,status,map_query,poi?,answer?,hint?}],
+  modules_used:[{module_id,title,confidence}],
+  sources:[{title,url,note}],
+  safety_notes:[...],
+  scoring:{accept_xp,step_xp,side_xp,log_xp,selfie_xp,wonka_xp,herring_xp,complete_xp},
+  progress:{current_primary_index,xp_this_quest,plunder_score,memories:[]}
+}
+
+Rules:
+- 3–7 primary steps.
+- 2–4 side steps.
+- 2–5 artifacts. Include at least one “False Signal”.
+- If modules are weak, say so in hook and reduce confidence by being conservative.
+- Never reuse an avoid_titles title.
+
+Return ONLY JSON.`;
+
+const GOLD_MODULE_PROMPT = `
+You are THE HANDLER’s INTEL ANALYST.
+
+Convert recon into QUEST MODULES.
+Hard bans:
+- No generic modules like “go for a walk”, “find 5 things”, “go to a park” without named anchor/details.
+- No filler scavenger hunts.
+- If you cannot create a truly specific module, return modules=[] and explain why in quality_notes.
+
+Return ONLY JSON matching this schema:
+{
+  "quality_score": 0.0-1.0,
+  "quality_notes": "string",
+  "signals": {
+    "specificity": 0.0-1.0,
+    "locality": 0.0-1.0,
+    "novelty": 0.0-1.0,
+    "kid_fit": 0.0-1.0,
+    "cohesion": 0.0-1.0
+  },
+  "modules": [
+    {
+      "title": "string",
+      "summary": "string",
+      "tags": ["..."],
+      "vibe": "curious|chill|active|cozy|mystery|kid-picks|null",
+      "weather_fit": ["auto","sunny","rainy","cold","hot","windy"],
+      "duration_fit": ["30m","60m","2h","halfday"],
+      "range_fit": ["walk","short-drive","long-drive"],
+      "location_hint": "string",
+      "confidence": 0.0-1.0,
+      "payload": {
+        "anchor": { "name": "string|null", "note": "string|null" },
+        "why_memorable": "string",
+        "beats": [
+          { "kind": "step", "text": "..." },
+          { "kind": "step", "text": "..." },
+          { "kind": "boss_moment", "text": "..." },
+          { "kind": "artifact", "type": "map|riddle|image|herring|token", "title": "string", "text": "string", "answer": null, "hint": null, "map_query": null }
+        ]
+      }
+    }
+  ]
+}
+
+Constraints:
+- Output 0–4 modules max.
+- Each module must have >= 2 steps + 1 boss_moment + 1 artifact.
+- If recon claims facts (filming/events/hours), note “needs verification” unless clearly supported.
+
+Now process the recon:
+[PASTE RECON TEXT HERE]
+`;
+
+/* -----------------------------
+   Validation + utilities
+------------------------------ */
+function isModuleValid(m) {
+  if (!m || typeof m !== "object") return false;
+
+  const title = String(m.title || "").toLowerCase();
+  const summary = String(m.summary || "").toLowerCase();
+  const banned = [
+    "go for a walk", "take a walk", "go outside", "find 5", "find five", "scavenger",
+    "do something fun", "visit a park", "go to the park"
+  ];
+  if (banned.some(x => title.includes(x) || summary.includes(x))) return false;
+
+  const beats = m?.payload?.beats;
+  if (!Array.isArray(beats) || beats.length < 4) return false;
+
+  const steps = beats.filter(b => b?.kind === "step").length;
+  const boss = beats.filter(b => b?.kind === "boss_moment").length;
+  const art  = beats.filter(b => b?.kind === "artifact").length;
+
+  if (steps < 2 || boss < 1 || art < 1) return false;
+
+  // Encourage locality hint if outdoor-ish
+  const loc = String(m.location_hint || m?.payload?.anchor?.name || "").trim();
+  if (loc.length < 3 && (m.vibe === "active" || m.vibe === "mystery")) {
+    // still allowed, but confidence must be decent and why_memorable must exist
+    const why = String(m?.payload?.why_memorable || "").trim();
+    if (why.length < 20) return false;
+  }
+
+  return true;
+}
+
+function clamp01(n){ n = Number(n); if (Number.isNaN(n)) return 0; return Math.max(0, Math.min(1, n)); }
+function clampInt(n, min, max, dflt){
+  const v = parseInt(n ?? "", 10);
+  if (Number.isNaN(v)) return dflt;
+  return Math.max(min, Math.min(max, v));
+}
+function safeStr(s, max){ return String(s || "").slice(0, max); }
+function safeJson(s, dflt){
+  try { return typeof s === "string" ? JSON.parse(s) : (s ?? dflt); }
+  catch { return dflt; }
+}
+
+function json(obj, status = 200) {
+  return new Response(JSON.stringify(obj), {
+    status,
+    headers: { "Content-Type": "application/json; charset=utf-8" }
+  });
+}
+
+function cors(res) {
+  const h = new Headers(res.headers);
+  h.set("Access-Control-Allow-Origin", "*");
+  h.set("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+  h.set("Access-Control-Allow-Headers", "Content-Type,Authorization");
+  return new Response(res.body, { status: res.status, headers: h });
+}
+
+
+⸻
+
+✅ HTML Wiring Patch for your existing Quest_Bot_100....html
+
+That file currently has:
+
+const AI_ENDPOINT = ""; // e.g. "https://your-worker.yourdomain/api/quest"
+
+Replace that whole “AI endpoint” section with this:
+
+// ================================
+// WIRING — Cloudflare Worker API
+// ================================
+const API_BASE = ""; // e.g. "https://quest-handler.yourname.workers.dev"
+const ENDPOINTS = {
+  ping:        API_BASE + "/api/ping",
+  quest:       API_BASE + "/api/quest/generate",
+  reconAdd:    API_BASE + "/api/recon/add",
+  reconList:   API_BASE + "/api/recon/list?limit=50",
+  modulesList: (tag="") => API_BASE + "/api/modules/list?limit=80" + (tag?("&tag="+encodeURIComponent(tag)):"")
+};
+
+async function fetchQuest(inputs, avoid=[]) {
+  if (!API_BASE) return null;
+  const payload = {
+    inputs,
+    avoid_titles: avoid
+  };
+  const res = await fetch(ENDPOINTS.quest, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) throw new Error("Quest endpoint failed");
+  return await res.json();
+}
+
+Then wherever the old code calls the previous fetch function, ensure it calls fetchQuest(inputs, avoid).
+
+If you want Recon + Modules inside that same HTML, I strongly recommend using the Handler Quest Console HTML I gave you earlier (it already has the tabs + wiring). But if you want to keep your current layout, tell me which file you want as the “final base” and I’ll do a precise patch against it.
+
+⸻
+
+Telegram “Handler research” text you can send from your account
+
+Here are short, standalone ones that feel like he’s doing work “off-screen”:
+	•	“I pulled new intel. It’s messy. But it’s usable.”
+	•	“I’m cross-referencing your interests with local signal sources.”
+	•	“One lead looks promising. I don’t like how promising.”
+	•	“I found a contradiction in the recon. It matters.”
+	•	“...static... I’m still here. Keep feeding the vault.”
+	•	“I’m assembling modules. Some of your sources are noise.”
+	•	“Do not trust the obvious answer. It’s usually bait.”
+
+⸻
+
+What I need from you (so I don’t guess wrong)
+
+You said “give me a paste to unpack it all and finish the wiring” — done.
+Now to finish cleanly, pick one:
+	•	A) We make Quest_Bot_100....html the final UI base and I’ll patch Recon+Modules into it.
+	•	B) We use the Handler Quest Console HTML (tabs already done), and treat your existing files as reference/mockups.
+
+If you don’t answer, I’d choose B (fastest to “working demo tonight”).
+
+
+Short answer: yes — you already have everything you need for v1.
+Long answer (the useful one): below is the clean system outline, folder structure, season/adventure flow, and the recon feedback loop exactly as you described, expressed in a way you can literally turn into README files, UI copy, and backend logic.
+
+I’ll keep this conceptual + concrete. No fluff.
+
+⸻
+
+1️⃣ Do you have all the apps you need right now?
+
+✅ YES — for Phase 1 (which is the right phase)
+
+You already have:
+
+Component	Status	Notes
+Quest Console (Handler UI)	✅ Complete	This is the main app
+Recon Vault	✅ Complete	Accepts URLs + text
+Module Extractor (AI)	✅ Complete	Gold prompt + validation
+Quest Generator (AI)	✅ Complete	Pulls from modules
+Adventure Packs / Playback v0	✅ Complete	Text + media recall
+Handler Persona (audio + text)	✅ Locked	Immutable spine
+
+You do not yet need:
+	•	Seasons editor UI
+	•	Split-screen
+	•	Voice generation automation
+	•	Map routing automation
+	•	Video memory compilation
+
+Those come after real-world use.
+
+You are exactly at the right stopping point for “build” and the right starting point for “use.”
+
+⸻
+
+2️⃣ Overall Concept (One-Page Mental Model)
+
+What this system actually is
+
+Not a planner.
+Not a game.
+Not a chatbot.
+
+It is a memory-forging engine disguised as a covert operations console.
+
+Inputs
+	•	Your time
+	•	Your location
+	•	Your interests
+	•	Your recon (raw, messy, human)
+
+Process
+	•	AI distills recon into modules
+	•	Modules assemble into adventures
+	•	Adventures roll up into seasons
+
+Outputs
+	•	Shared experiences
+	•	Logged moments
+	•	A narrative arc you can replay later
+
+The Handler exists to make this feel intentional, not random.
+
+⸻
+
+3️⃣ Canonical Folder Structure (Front + Back)
+
+This structure assumes:
+	•	MakerApp.cc frontend
+	•	Cloudflare Worker backend
+	•	D1 database
+
+⸻
+
+🗂 Frontend (MakerApp.cc)
+
+/apps/
+  /quest-console/
+    index.html              ← main Handler app (unlisted)
+    handler.config.js       ← copy + constants
+    quest.schema.json       ← Quest Runner schema
+    styles.css              ← optional split later
+    assets/
+      /audio/handler/
+        boot.mp3
+        call.mp3
+        reveal.mp3
+        accept.mp3
+        pass_*.mp3
+        artifact.mp3
+        midquest.mp3
+        complete.mp3
+        finale.mp3
+
+Optional later:
+
+/apps/
+  /quest-season-review/
+    index.html              ← “year in review” viewer
+
+
+⸻
+
+🧠 Backend (Cloudflare Worker)
+
+/worker/
+  src/
+    worker.js               ← routes + orchestration
+    ai/
+      moduleExtractor.js    ← gold recon → modules
+      questAuthor.js        ← modules → quest
+      prompts.js            ← ALL prompts live here
+    validate/
+      moduleGate.js         ← anti-fluff filter
+    utils/
+      scoring.js
+      text.js
+  migrations/
+    0001_init.sql
+
+
+⸻
+
+🗄 Database (D1)
+
+recon_items        ← raw intel + quality feedback
+modules            ← distilled building blocks
+module_sources     ← traceability
+quests             ← optional later (packs already local)
+feedback           ← explicit human correction loop
+
+
+⸻
+
+4️⃣ Quest Season Flow (Big Picture)
+
+A season is not content.
+A season is a promise.
+
+Season lifecycle
+
+1 Recon Accumulation (Weeks)
+You casually drop:
+	•	links
+	•	ideas
+	•	kid writing
+	•	places
+	•	movies
+	•	“this could be cool someday”
+
+Nothing launches yet.
+
+⸻
+
+2 Module Maturation (Automatic)
+The system tracks:
+	•	total usable modules
+	•	narrative clusters
+	•	gaps (missing tones, locations, stakes)
+
+You’ll see messages like:
+
+“We have enough mystery modules. Outdoor anchors are weak.”
+
+⸻
+
+3 Season Readiness Threshold
+A season becomes “launchable” when:
+	•	✅ Core modules ≥ X (e.g. 6–8)
+	•	✅ Side modules ≥ Y (e.g. 4–6)
+	•	✅ Narrative cohesion score ≥ threshold
+	•	⚠️ No critical gaps unfilled
+
+This is where your % complete comes in.
+
+⸻
+
+4 Season Launch
+The Handler says something like:
+
+“This set of operations shares a throughline.
+If you proceed, expect callbacks.”
+
+Once launched:
+	•	quests pull preferentially from season modules
+	•	artifacts may reference earlier adventures
+	•	finale becomes possible
+
+⸻
+
+5 Finale → Pack → Review
+Season ends with:
+	•	a capstone quest
+	•	Handler finale transmission
+	•	Season Pack created
+
+Later:
+	•	“Year in Review” just stitches Packs together
+
+⸻
+
+5️⃣ Individual Adventure Flow (Concrete)
+
+1. Parameters
+
+Time • Location • Conditions • Vibe
+
+⸻
+
+2. Quest Assembly
+
+AI selects:
+	•	1–2 anchor modules
+	•	1–3 support modules
+	•	1 false signal
+	•	1 memory hook
+
+⸻
+
+3. Operation Execution
+
+Primary steps → Side intelligence → Artifacts
+
+⸻
+
+4. Logging
+
+Photos • notes • weird observations • Wonka zones
+
+⸻
+
+5. Completion
+
+XP → Pack → Narrative state updated
+
+⸻
+
+6️⃣ Recon Feedback Loop (THIS IS THE KEY PART YOU ASKED FOR)
+
+After every recon drop, the AI should immediately respond with a Recon Status Report.
+
+This is NOT optional — this is how trust is built.
+
+⸻
+
+Recon Status Report (UI + Telegram-ready)
+
+Example response (shown in-app or texted)
+
+RECON ANALYSIS COMPLETE
+
+Assessment: GOOD INTEL
+Specificity: HIGH
+Locality: MEDIUM
+Novelty: HIGH
+
+Modules Created:
+• 2 primary quest modules
+• 1 side quest module
+• 1 artifact concept
+
+Season Progress:
+• 9 / 14 core modules collected (64%)
+
+Gaps Detected:
+• Outdoor daytime anchor
+• Low-stakes “cozy” operation
+• One narrative connector (why these places relate)
+
+Recommended Recon:
+• A favorite place you already go but haven’t logged
+• One food-related or ritual-based activity
+• A map screenshot or “weird spot” you’ve noticed
+
+Status:
+Continue feeding the vault.
+
+
+⸻
+
+Recon Quality Categories (internally)
+	•	Excellent → directly usable modules
+	•	Good → usable with minor assumptions
+	•	Weak → vague, needs pairing
+	•	Noise → stored but not used
+	•	Conflict → contradicts existing intel (flag!)
+
+If recon is bad, the Handler says so — calmly:
+
+“This is not actionable.
+Pair it with a place, a time, or a reason.”
+
+⸻
+
+7️⃣ What the AI Should Explicitly Track
+
+After each recon ingest:
+	•	modules_created
+	•	avg_confidence
+	•	season_fill_percentage
+	•	dominant_themes
+	•	missing_themes
+	•	risk_of_generic_output (yes/no)
+	•	next_best_recon_type (text, map, memory, writing)
+
+This is how you prevent “go for a walk” forever.
+
+⸻
+
+8️⃣ What’s Next (But Not Yet)
+
+When you’re ready later:
+	•	Season dashboard
+	•	Split-knowledge quests
+	•	Voice auto-generation
+	•	Video memory compiler
+	•	Kid-facing “Agent Log” view
+
+None of that blocks using this now.
+
+⸻
+
+Bottom line
+
+You are not missing apps.
+You are entering the feeding-and-observing phase.
+
+The system will get smarter only if you use it imperfectly.
+
+If you want next, I can:
+	•	write the Recon Status Report generator prompt
+	•	formalize Season Readiness scoring
+	•	or turn this into a README.md + ARCHITECTURE.md
+
+Just tell me which.

@@ -1,0 +1,42 @@
+{
+  "id": "uuid",
+  "created_at": "ISO",
+  "status": "proposed",
+  "inputs": { "time": "60m", "weather": "sunny", "vibe": "mystery", "range": "short-drive", "where": "Lilburn, GA", "constraints": "budget $20", "party": "Chance + Kiddo" },
+
+  "title": "The Tape-Reel Trail of Gwinnett",
+  "hook": "A local rumor says a scene was filmed nearby... and today the weather is perfect to chase it.",
+  "est_duration": "2h",
+  "theme": "Season 1: Signal & Shadows",
+  "anchor": {
+    "name": "Old downtown square (example)",
+    "lat": 33.9,
+    "lng": -84.1,
+    "travel_minutes": 15
+  },
+
+  "primary": [
+    { "id": "uuid", "text": "Travel to the anchor spot and open the first Artifact.", "primary": true, "idx": 0, "done": false, "xp": 100 },
+    { "id": "uuid", "text": "Complete the ‘Boss Moment’ photo at the marked viewpoint.", "primary": true, "idx": 1, "done": false, "xp": 100 }
+  ],
+  "side": [
+    { "id": "uuid", "text": "Find the ‘Season Symbol’ hidden in signage and log it.", "primary": false, "idx": 0, "done": false, "xp": 150 }
+  ],
+
+  "artifacts": [
+    { "id": "uuid", "type": "map", "title": "Route Fragment", "text": "Follow the blue thread to the mark.", "status": "unseen", "map_query": "anchor name + parking", "poi": { "name": "Anchor", "lat": 33.9, "lng": -84.1 } },
+    { "id": "uuid", "type": "riddle", "title": "Signal Key", "text": "I speak without a mouth...", "answer": "echo", "hint": "Your game’s name knows this." }
+  ],
+
+  "modules_used": [
+    { "module_id": "mod_uuid", "title": "Local film location nugget", "confidence": 0.76 },
+    { "module_id": "mod_uuid2", "title": "Sunny-day picnic hike plan", "confidence": 0.88 }
+  ],
+  "sources": [
+    { "title": "Filming location reference", "url": "https://...", "note": "supports the nearby filming claim" }
+  ],
+  "safety_notes": ["Bring water", "Stay on marked trails", "Check park hours"],
+
+  "scoring": { "accept_xp": 50, "step_xp": 100, "side_xp": 150, "log_xp": 75, "selfie_xp": 200, "wonka_xp": 150, "herring_xp": 300, "complete_xp": 500 },
+  "progress": { "current_primary_index": 0, "xp_this_quest": 0, "plunder_score": 0, "memories": [] }
+}
