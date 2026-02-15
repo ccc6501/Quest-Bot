@@ -1355,6 +1355,13 @@
    Quest Console v2 — Story-Skinnable Edition
    ======================================== */
 
+/* ---------- DEPLOYMENT CONFIG ---------- */
+// Point these at your Cloudflare Worker and audio host.
+// For local dev:  API_BASE = "http://localhost:8787"
+// For production: API_BASE = "https://quest-handler.<your-account>.workers.dev"
+const API_BASE  = "";
+const AUDIO_BASE = "https://makerapp.cc/apps/quest-console/assets/audio/handler";
+
 const APP_KEY = "quest_console_v3";
 const DB_NAME = "quest_console_media_v1";
 const DB_STORE = "blobs";
@@ -1965,13 +1972,45 @@ function mkTask(text,primary,i){
   return {id:uid(),text,primary,idx:i,done:false,xp:primary?100:150};
 }
 
-/* ---------- AI hook (stubbed) ---------- */
+/* ---------- AI hook (wired to Cloudflare Worker) ---------- */
 async function maybeGenerateQuestAI(inputs,avoid){
-  const AI_ENDPOINT="";
-  if(!AI_ENDPOINT)return null;
-  const payload={inputs,avoid,interests:INTERESTS.map(x=>({theme:x.theme,tags:x.tags}))};
-  const res=await fetch(AI_ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
-  if(!res.ok)throw new Error("AI endpoint failed");
+  if(!API_BASE)return null;
+  const payload={inputs,avoid_titles:avoid,interests:INTERESTS.map(x=>({theme:x.theme,tags:x.tags}))};
+  const res=await fetch(API_BASE+"/api/quest/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+  if(!res.ok)throw new Error("AI endpoint failed: "+res.status);
+  return await res.json();
+}
+
+/* ---------- Recon ingest (wired to Cloudflare Worker) ---------- */
+async function submitRecon(type,text,url,title){
+  if(!API_BASE)throw new Error("API_BASE not configured");
+  const res=await fetch(API_BASE+"/api/recon/add",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({type,text,url,title})});
+  if(!res.ok)throw new Error("Recon submission failed: "+res.status);
+  return await res.json();
+}
+
+/* ---------- D1 Sync (offline-first) ---------- */
+const SYNC_KEY="quest_sync_state";
+function getSyncState(){try{return JSON.parse(localStorage.getItem(SYNC_KEY))||{}}catch{return{}}}
+function setSyncState(s){localStorage.setItem(SYNC_KEY,JSON.stringify(s))}
+
+async function syncPull(){
+  if(!API_BASE)return null;
+  const state=getSyncState();
+  const since=state.last_pull||"1970-01-01T00:00:00Z";
+  const res=await fetch(API_BASE+"/api/sync/pull?since="+encodeURIComponent(since));
+  if(!res.ok)throw new Error("Sync pull failed: "+res.status);
+  const data=await res.json();
+  if(data.ok)setSyncState({...state,last_pull:data.server_ts});
+  return data;
+}
+
+async function syncPush(changes){
+  if(!API_BASE)return null;
+  const state=getSyncState();
+  const clientId=state.client_id||(state.client_id=crypto.randomUUID(),setSyncState(state),state.client_id);
+  const res=await fetch(API_BASE+"/api/sync/push",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({client_id:clientId,changes})});
+  if(!res.ok)throw new Error("Sync push failed: "+res.status);
   return await res.json();
 }
 
@@ -2418,7 +2457,8 @@ function getHandlerData(q){
   if(q.handler)return q.handler;
   const baseTheme=q.title.split(" — ")[0];
   const lines=DEFAULT_HANDLER_LINES[baseTheme]||["Agent… a new objective has surfaced.","The details are in your briefing. Study them carefully.","Complete the primary objectives. Side tasks are optional but… rewarded.","Good luck out there."];
-  return{name:"The Handler",lines,audio_url:"",type_speed:30,auto_advance:false,auto_advance_delay:1400};
+  const fallbackAudio=AUDIO_BASE?(AUDIO_BASE+"/briefing_default.mp3"):"";
+  return{name:"The Handler",lines,audio_url:fallbackAudio,type_speed:30,auto_advance:false,auto_advance_delay:1400};
 }
 
 async function startBriefing(quest){

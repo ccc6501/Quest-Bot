@@ -8,6 +8,15 @@ database_name = "questing"
 database_id = "REPLACE_ME"
 
 [vars]
+# AI provider: "openrouter" or "openai"
 AI_PROVIDER = "openrouter"
-OPENROUTER_API_KEY = "REPLACE_ME"
+
+# OpenRouter config (used when AI_PROVIDER = "openrouter")
 OPENROUTER_MODEL = "anthropic/claude-3.5-sonnet"
+
+# OpenAI config (used when AI_PROVIDER = "openai")
+OPENAI_MODEL = "gpt-4o"
+
+# IMPORTANT: Set API keys as secrets, not vars:
+#   wrangler secret put OPENROUTER_API_KEY
+#   wrangler secret put OPENAI_API_KEY

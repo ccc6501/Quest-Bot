@@ -1,32 +1,41 @@
 export default {
   async fetch(req, env) {
     const url = new URL(req.url);
-    if (req.method === 'OPTIONS') return cors(new Response(null, { status: 204 }));
+    if (req.method === 'OPTIONS') return cors(new Response(null, { status: 204 }), req);
 
     try {
       if (req.method === 'GET' && url.pathname === '/api/ping') {
-        return cors(json({ ok: true, ts: new Date().toISOString() }));
+        return cors(json({ ok: true, ts: new Date().toISOString(), provider: env.AI_PROVIDER || 'openrouter' }), req);
       }
 
       if (req.method === 'POST' && url.pathname === '/api/recon/add') {
-        return cors(await addRecon(req, env));
+        return cors(await addRecon(req, env), req);
       }
 
       if (req.method === 'GET' && url.pathname === '/api/recon/list') {
-        return cors(await listRecon(url, env));
+        return cors(await listRecon(url, env), req);
       }
 
       if (req.method === 'GET' && url.pathname === '/api/modules/list') {
-        return cors(await listModules(url, env));
+        return cors(await listModules(url, env), req);
       }
 
       if (req.method === 'POST' && url.pathname === '/api/quest/generate') {
-        return cors(await generateQuest(req, env));
+        return cors(await generateQuest(req, env), req);
       }
 
-      return cors(new Response('Not found', { status: 404 }));
+      // --- D1 Sync endpoints ---
+      if (req.method === 'POST' && url.pathname === '/api/sync/push') {
+        return cors(await syncPush(req, env), req);
+      }
+
+      if (req.method === 'GET' && url.pathname === '/api/sync/pull') {
+        return cors(await syncPull(url, env), req);
+      }
+
+      return cors(new Response('Not found', { status: 404 }), req);
     } catch (err) {
-      return cors(json({ ok: false, error: String(err?.message || err) }, 500));
+      return cors(json({ ok: false, error: String(err?.message || err) }, 500), req);
     }
   }
 };
@@ -189,6 +198,103 @@ async function generateQuest(req, env) {
 }
 
 // -----------------------
+// D1 Sync (offline-first client ↔ D1)
+// -----------------------
+
+// Client pushes local changes since last sync
+async function syncPush(req, env) {
+  const body = await req.json();
+  const clientId = safeStr(body.client_id || '', 64);
+  if (!clientId) return json({ ok: false, error: 'Missing client_id' }, 400);
+
+  const changes = body.changes || {};
+  let applied = 0;
+
+  // Process each table's upserts
+  for (const [table, rows] of Object.entries(changes)) {
+    if (!['recon_items', 'modules', 'module_sources', 'feedback'].includes(table)) continue;
+    if (!Array.isArray(rows)) continue;
+
+    for (const row of rows) {
+      if (!row.id && table !== 'module_sources') continue;
+
+      if (table === 'recon_items') {
+        await env.DB.prepare(`
+          INSERT OR REPLACE INTO recon_items (id, created_at, type, title, source_url, raw_text, parse_status, quality_score, quality_notes)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).bind(row.id, row.created_at, row.type || 'text', row.title || '', row.source_url || '', row.raw_text || '', row.parse_status || 'synced', clamp01(row.quality_score ?? 0.5), row.quality_notes || '').run();
+        applied++;
+      }
+
+      if (table === 'modules') {
+        await env.DB.prepare(`
+          INSERT OR REPLACE INTO modules (id, created_at, title, summary, tags, vibe, weather_fit, duration_fit, range_fit, location_hint, confidence, payload)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).bind(
+          row.id, row.created_at || new Date().toISOString(),
+          safeStr(row.title, 120), safeStr(row.summary, 400),
+          typeof row.tags === 'string' ? row.tags : JSON.stringify(row.tags || []),
+          row.vibe || null,
+          typeof row.weather_fit === 'string' ? row.weather_fit : JSON.stringify(row.weather_fit || []),
+          typeof row.duration_fit === 'string' ? row.duration_fit : JSON.stringify(row.duration_fit || []),
+          typeof row.range_fit === 'string' ? row.range_fit : JSON.stringify(row.range_fit || []),
+          safeStr(row.location_hint || '', 240),
+          clamp01(row.confidence ?? 0.6),
+          typeof row.payload === 'string' ? row.payload : JSON.stringify(row.payload || {})
+        ).run();
+        applied++;
+      }
+
+      if (table === 'feedback') {
+        await env.DB.prepare(`
+          INSERT OR REPLACE INTO feedback (id, created_at, kind, target_id, rating, note, action)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `).bind(row.id, row.created_at || new Date().toISOString(), row.kind || 'general', row.target_id || '', row.rating ?? null, row.note || '', row.action || '').run();
+        applied++;
+      }
+
+      if (table === 'module_sources' && row.module_id && row.recon_id) {
+        await env.DB.prepare(`
+          INSERT OR REPLACE INTO module_sources (module_id, recon_id, note) VALUES (?, ?, ?)
+        `).bind(row.module_id, row.recon_id, row.note || '').run();
+        applied++;
+      }
+    }
+  }
+
+  // Record sync timestamp
+  await env.DB.prepare(`
+    INSERT OR REPLACE INTO sync_ledger (client_id, last_push_at, last_push_count)
+    VALUES (?, ?, ?)
+  `).bind(clientId, new Date().toISOString(), applied).run();
+
+  return json({ ok: true, applied });
+}
+
+// Client pulls all changes since a given timestamp
+async function syncPull(url, env) {
+  const since = url.searchParams.get('since') || '1970-01-01T00:00:00Z';
+  const limit = clampInt(url.searchParams.get('limit'), 1, 500, 200);
+
+  const [recon, modules, feedback] = await Promise.all([
+    env.DB.prepare(`SELECT * FROM recon_items WHERE created_at > ? ORDER BY created_at ASC LIMIT ?`).bind(since, limit).all(),
+    env.DB.prepare(`SELECT * FROM modules WHERE created_at > ? ORDER BY created_at ASC LIMIT ?`).bind(since, limit).all(),
+    env.DB.prepare(`SELECT * FROM feedback WHERE created_at > ? ORDER BY created_at ASC LIMIT ?`).bind(since, limit).all()
+  ]);
+
+  return json({
+    ok: true,
+    since,
+    server_ts: new Date().toISOString(),
+    changes: {
+      recon_items: recon.results || [],
+      modules: modules.results || [],
+      feedback: feedback.results || []
+    }
+  });
+}
+
+// -----------------------
 // AI calls + prompts
 // -----------------------
 async function extractModulesFromRecon(text, env) {
@@ -204,13 +310,29 @@ async function extractModulesFromRecon(text, env) {
 }
 
 async function callAIJson(userContent, env) {
-  const model = env.OPENROUTER_MODEL || 'anthropic/claude-3.5-sonnet';
-  const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-    method: 'POST',
-    headers: {
+  const provider = (env.AI_PROVIDER || 'openrouter').toLowerCase();
+  let endpoint, headers, model;
+
+  if (provider === 'openai') {
+    endpoint = 'https://api.openai.com/v1/chat/completions';
+    model = env.OPENAI_MODEL || 'gpt-4o';
+    headers = {
+      'Authorization': `Bearer ${env.OPENAI_API_KEY}`,
+      'Content-Type': 'application/json'
+    };
+  } else {
+    // openrouter (default) — works with any model slug incl. OpenAI models via OpenRouter
+    endpoint = 'https://openrouter.ai/api/v1/chat/completions';
+    model = env.OPENROUTER_MODEL || 'anthropic/claude-3.5-sonnet';
+    headers = {
       'Authorization': `Bearer ${env.OPENROUTER_API_KEY}`,
       'Content-Type': 'application/json'
-    },
+    };
+  }
+
+  const res = await fetch(endpoint, {
+    method: 'POST',
+    headers,
     body: JSON.stringify({
       model,
       messages: [
@@ -221,9 +343,14 @@ async function callAIJson(userContent, env) {
     })
   });
 
+  if (!res.ok) {
+    const errBody = await res.text().catch(() => '');
+    throw new Error(`AI request failed (${provider} ${res.status}): ${errBody.slice(0, 200)}`);
+  }
+
   const data = await res.json();
   const content = data?.choices?.[0]?.message?.content;
-  if (!content) throw new Error('AI returned empty response');
+  if (!content) throw new Error(`AI returned empty response (${provider})`);
 
   try { return JSON.parse(content); }
   catch {
@@ -354,10 +481,21 @@ function safeJson(s, dflt){
 function json(obj, status = 200) {
   return new Response(JSON.stringify(obj), { status, headers: { 'Content-Type': 'application/json; charset=utf-8' } });
 }
-function cors(res) {
+const ALLOWED_ORIGINS = [
+  'https://makerapp.cc',
+  'https://www.makerapp.cc',
+  'http://localhost:8787',
+  'http://localhost:3000',
+  'http://127.0.0.1:8787'
+];
+
+function cors(res, req) {
   const h = new Headers(res.headers);
-  h.set('Access-Control-Allow-Origin', '*');
+  const origin = req?.headers?.get('Origin') || '';
+  const allowed = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  h.set('Access-Control-Allow-Origin', allowed);
   h.set('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
   h.set('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+  h.set('Vary', 'Origin');
   return new Response(res.body, { status: res.status, headers: h });
 }
