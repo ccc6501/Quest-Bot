@@ -9,5 +9,5 @@ database_id = "a1b2c3d4-5678-90ab-cdef-1234567890ab"
 
 [vars]
 AI_PROVIDER = "openrouter"
-OPENROUTER_API_KEY = "REPLACE_ME"
+OPENROUTER_API_KEY = "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"
 OPENROUTER_MODEL = "anthropic/claude-3.5-sonnet"
