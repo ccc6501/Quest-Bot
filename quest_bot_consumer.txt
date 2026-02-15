@@ -1,0 +1,2218 @@
+Awesome. Here are the two complete drop-ins:
+	1.	Unlisted MakerApp single-file HTML (QUEST / RECON / MODULES / SEASONS)
+	2.	Cloudflare Worker + D1 backend (recon ingestion → module extraction → quest generation → season planner)
+Default AI provider: OpenRouter (easy model swapping). You can swap to OpenAI later with minimal changes.
+
+⸻
+
+1) quest-console-unlisted.html (single file)
+
+Save as an unlisted page on makerapp.cc (or any subpath), then set API_BASE to your Worker URL.
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Quest Console — Unlisted</title>
+  <style>
+    :root{
+      --bg0:#070A12; --bg1:#0B1020;
+      --glass:rgba(255,255,255,.06);
+      --glass2:rgba(255,255,255,.10);
+      --stroke:rgba(255,255,255,.12);
+      --text:#EAF2FF; --muted:rgba(234,242,255,.72); --muted2:rgba(234,242,255,.55);
+      --accent:#74D6FF; --accent2:#B48CFF; --danger:#FF4D6D; --good:#58F29D; --warn:#FFCC66;
+      --radius2:26px; --shadow: 0 24px 64px rgba(0,0,0,.55);
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+    body[data-skin="sci"]{ --bg0:#050812; --bg1:#080E1F; --accent:#54F0FF; --accent2:#8A7CFF; --glass:rgba(116,214,255,.06); --glass2:rgba(116,214,255,.10); }
+    body[data-skin="parch"]{ --bg0:#251b10; --bg1:#1c140c; --accent:#FFCC66; --accent2:#F29C58; --glass:rgba(255,242,216,.06); --glass2:rgba(255,242,216,.10); --stroke:rgba(255,242,216,.14); }
+    body[data-skin="cozy"]{ --bg0:#0b1020; --bg1:#121a2e; --accent:#FF9FD6; --accent2:#88D7FF; }
+    body[data-skin="map"]{ --bg0:#0b0b0b; --bg1:#121212; --accent:#7AE2C6; --accent2:#E6C87A; }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; font-family:var(--sans); color:var(--text);
+      background:
+        radial-gradient(1200px 800px at 20% 10%, rgba(180,140,255,.18), transparent 55%),
+        radial-gradient(1200px 800px at 80% 30%, rgba(116,214,255,.18), transparent 55%),
+        linear-gradient(160deg, var(--bg0), var(--bg1));
+      overflow-x:hidden; -webkit-tap-highlight-color: transparent;
+    }
+    .wrap{ min-height:100%; padding: max(14px, env(safe-area-inset-top)) 14px max(16px, env(safe-area-inset-bottom)); display:flex; justify-content:center; }
+    .app{ width:min(1100px, 100%); display:grid; gap:14px; }
+    .panel{
+      background:linear-gradient(180deg, var(--glass2), var(--glass));
+      border:1px solid var(--stroke);
+      border-radius:var(--radius2);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      overflow:hidden;
+    }
+    .topbar{
+      display:flex; gap:10px; align-items:center; justify-content:space-between;
+      padding:12px 14px;
+    }
+    .brand{display:flex; flex-direction:column; gap:2px; line-height:1.1;}
+    .brand .t{font-weight:900; letter-spacing:.14em; text-transform:uppercase; font-size:13px}
+    .brand .s{font-family:var(--mono); font-size:12px; color:var(--muted2)}
+    .chips{display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end}
+    .chip{font-family:var(--mono); font-size:11px; padding:6px 10px; border-radius:999px; border:1px solid var(--stroke); background:rgba(0,0,0,.18); color:var(--muted); display:flex; gap:8px; align-items:center;}
+    .chip b{color:var(--text)}
+    .tabs{
+      display:flex; gap:10px; flex-wrap:wrap;
+      padding:12px 14px 0;
+    }
+    button{
+      appearance:none; border:0; cursor:pointer;
+      color:var(--text); background:rgba(0,0,0,.24);
+      border:1px solid var(--stroke);
+      padding:10px 12px; border-radius:14px;
+      font-weight:800; letter-spacing:.10em; text-transform:uppercase; font-size:11px;
+      transition: transform .08s ease, background .15s ease, border-color .15s ease;
+      user-select:none;
+    }
+    button:hover{transform: translateY(-1px); background:rgba(0,0,0,.30)}
+    button:active{transform: translateY(0px) scale(.99)}
+    button.primary{ background:linear-gradient(135deg, rgba(116,214,255,.20), rgba(180,140,255,.20)); border-color: rgba(116,214,255,.28); }
+    button.good{ background:linear-gradient(135deg, rgba(88,242,157,.18), rgba(116,214,255,.12)); border-color: rgba(88,242,157,.28); }
+    button.danger{ background:linear-gradient(135deg, rgba(255,77,109,.20), rgba(0,0,0,.15)); border-color: rgba(255,77,109,.32); }
+    button.ghost{ background:transparent; }
+    button.tabOn{ border-color: rgba(116,214,255,.40); background:rgba(0,0,0,.32); }
+
+    .hd{ padding:14px 14px 10px; display:flex; align-items:flex-start; justify-content:space-between; gap:12px; border-top:1px solid rgba(255,255,255,.04); border-bottom:1px solid rgba(255,255,255,.06); }
+    .title{display:flex; flex-direction:column; gap:6px;}
+    .title h2{ margin:0; font-size:14px; letter-spacing:.14em; text-transform:uppercase; }
+    .title p{ margin:0; font-family:var(--mono); font-size:12px; color:var(--muted2); line-height:1.35; }
+    .body{ padding:14px; }
+
+    .grid{ display:grid; gap:14px; grid-template-columns: 1fr; }
+    @media(min-width: 920px){ .grid{ grid-template-columns: 1.05fr .95fr; } }
+
+    label{ display:flex; flex-direction:column; gap:6px; font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted2); }
+    input, select, textarea{
+      width:100%; font-family:var(--sans); color:var(--text);
+      background:rgba(0,0,0,.20); border:1px solid var(--stroke);
+      border-radius:14px; padding:12px 12px; outline:none;
+    }
+    textarea{min-height:110px; resize:vertical; font-family:var(--mono); font-size:12px}
+    .form{ display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+    .full{ grid-column:1/-1 }
+    .btnrow{ display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+
+    .hint{font-family:var(--mono); color:var(--muted2); font-size:12px; line-height:1.35}
+
+    .zoltar{
+      border:1px dashed rgba(255,255,255,.16); border-radius:var(--radius2);
+      padding:14px;
+      background: radial-gradient(800px 420px at 60% 0%, rgba(116,214,255,.10), transparent 60%),
+                  radial-gradient(900px 420px at 20% 100%, rgba(180,140,255,.10), transparent 60%),
+                  rgba(0,0,0,.20);
+    }
+    .zoltar .big{font-weight:900; letter-spacing:.12em; text-transform:uppercase; font-size:13px; margin:0 0 6px 0;}
+    .zoltar .questTitle{ margin:0; font-size:22px; letter-spacing:.02em; line-height:1.1; }
+    .zoltar .hook{ margin:8px 0 0 0; color:var(--muted); font-family:var(--mono); font-size:13px; line-height:1.35; }
+    .list{ margin-top:12px; display:grid; gap:10px; grid-template-columns: 1fr; }
+    @media(min-width:920px){ .list{grid-template-columns: 1fr 1fr} }
+    .card{ border:1px solid rgba(255,255,255,.10); background:rgba(0,0,0,.18); border-radius:18px; padding:12px; }
+    .card h4{ margin:0 0 8px 0; font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted2); }
+    .ol{ margin:0; padding-left:18px; color:var(--text); font-family:var(--mono); font-size:13px; line-height:1.5; }
+    .metaRow{ margin-top:12px; display:flex; flex-wrap:wrap; gap:8px; }
+    .pill{ font-family:var(--mono); font-size:12px; padding:6px 10px; border-radius:999px; border:1px solid rgba(255,255,255,.12); background:rgba(0,0,0,.18); color:var(--muted); }
+
+    .consoleHeader{ padding:14px 14px 10px; display:flex; justify-content:space-between; gap:12px; border-bottom:1px solid rgba(255,255,255,.06); }
+    .qh{ display:flex; flex-direction:column; gap:6px; min-width:0; }
+    .qh .qt{ font-size:18px; font-weight:900; line-height:1.1; margin:0; letter-spacing:.02em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .qh .qs{ font-family:var(--mono); font-size:12px; color:var(--muted2); margin:0; line-height:1.35; }
+    .statsStrip{ display:flex; flex-direction:column; gap:6px; min-width:240px; align-items:flex-end; }
+    .statline,.xp{ font-family:var(--mono); font-size:12px; color:var(--muted2); }
+    .bar{ width:220px; height:10px; border-radius:999px; border:1px solid rgba(255,255,255,.14); background:rgba(0,0,0,.20); overflow:hidden; }
+    .bar > i{ display:block; height:100%; width:0%; background: linear-gradient(90deg, rgba(116,214,255,.95), rgba(180,140,255,.95)); box-shadow: 0 0 18px rgba(116,214,255,.35); }
+    .bar.side > i{ background: linear-gradient(90deg, rgba(88,242,157,.9), rgba(116,214,255,.8)); }
+
+    .consoleBody{ padding:14px; display:grid; gap:12px; }
+    .artifactRow{
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      padding:12px; border:1px solid rgba(255,255,255,.10); background:rgba(0,0,0,.18); border-radius:18px;
+    }
+    .artifactRow .left{ display:flex; flex-direction:column; gap:4px; }
+    .artifactRow .left b{ font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted2); }
+    .artifactRow .left span{ font-family:var(--mono); font-size:12px; color:var(--muted); line-height:1.35; }
+
+    .scrollBox{ border:1px solid rgba(255,255,255,.10); background:rgba(0,0,0,.18); border-radius:18px; padding:12px; max-height: 360px; overflow:auto; }
+    .sect{ margin-bottom:12px; }
+    .sect h3{ margin:0 0 8px 0; font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted2); }
+    .task{ display:flex; align-items:flex-start; gap:10px; padding:10px; border-radius:14px; border:1px solid rgba(255,255,255,.08); background:rgba(0,0,0,.14); margin-bottom:8px; }
+    .task input[type="checkbox"]{ margin-top:2px; width:18px; height:18px; accent-color: var(--accent); }
+    .task .txt{ display:flex; flex-direction:column; gap:4px; min-width:0; }
+    .task .txt .line{ font-family:var(--mono); font-size:13px; line-height:1.35; word-wrap:break-word; }
+    .task .txt .sub{ font-family:var(--mono); font-size:12px; color:var(--muted2); display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+    .badge{ font-family:var(--mono); font-size:11px; padding:2px 8px; border-radius:999px; border:1px solid rgba(255,255,255,.12); background:rgba(0,0,0,.16); color:var(--muted); }
+    .badge.good{ border-color: rgba(88,242,157,.22); color: rgba(88,242,157,.95) }
+    .badge.warn{ border-color: rgba(255,204,102,.24); color: rgba(255,204,102,.95) }
+
+    .bottomNav{ display:grid; grid-template-columns: repeat(4, 1fr); gap:10px; padding:14px; border-top:1px solid rgba(255,255,255,.06); background:rgba(0,0,0,.10); }
+    .bottomNav button{ width:100%; padding:12px 10px; }
+
+    .table{ width:100%; border-collapse:collapse; }
+    .table th, .table td{ border-bottom:1px solid rgba(255,255,255,.08); padding:10px 8px; text-align:left; font-family:var(--mono); font-size:12px; color:var(--muted); vertical-align:top; }
+    .table th{ color:var(--muted2); letter-spacing:.10em; text-transform:uppercase; font-size:11px; }
+    .kpi{ display:flex; gap:8px; flex-wrap:wrap; }
+    .kpi .pill{ font-size:11px; }
+
+    .modalBack{ position:fixed; inset:0; background: rgba(0,0,0,.62); display:none; align-items:flex-end; justify-content:center; padding: 14px 14px max(14px, env(safe-area-inset-bottom)); z-index:50; }
+    .modalBack.active{display:flex}
+    .modal{ width:min(900px, 100%); border-radius:24px; border:1px solid rgba(255,255,255,.14); background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.06)); backdrop-filter: blur(14px); box-shadow: var(--shadow); overflow:hidden; max-height: 88vh; display:flex; flex-direction:column; }
+    .mh{ padding:12px 14px; display:flex; align-items:center; justify-content:space-between; gap:10px; border-bottom:1px solid rgba(255,255,255,.08); }
+    .mh .t{ font-weight:900; letter-spacing:.12em; text-transform:uppercase; font-size:12px; }
+    .mc{ padding:14px; overflow:auto; display:grid; gap:12px; }
+    .artifactCard{ border:1px solid rgba(255,255,255,.10); border-radius:18px; background:rgba(0,0,0,.18); padding:12px; }
+    .artifactCard h4{ margin:0 0 8px 0; font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted2); }
+    .artifactCard p{ margin:0; font-family:var(--mono); font-size:13px; line-height:1.5; }
+    .artifactCard img{ width:100%; border-radius:16px; border:1px solid rgba(255,255,255,.10); display:block; margin-top:10px; background:rgba(0,0,0,.22); }
+
+    .toast{ position:fixed; left:50%; bottom: max(14px, env(safe-area-inset-bottom)); transform: translateX(-50%); padding:10px 12px; border-radius:999px; border:1px solid rgba(255,255,255,.14); background:rgba(0,0,0,.55); color:var(--text); font-family:var(--mono); font-size:12px; display:none; z-index:60; box-shadow: 0 18px 48px rgba(0,0,0,.45); }
+    .toast.show{display:block}
+    .sep{height:1px;background:rgba(255,255,255,.08); margin:12px 0}
+    .mono{font-family:var(--mono)}
+  </style>
+</head>
+
+<body data-skin="sci">
+  <div class="wrap">
+    <div class="app panel">
+
+      <div class="topbar">
+        <div class="brand">
+          <div class="t">Quest Console</div>
+          <div class="s" id="subline">unlisted makerapp.cc app • lore-first</div>
+        </div>
+        <div class="chips">
+          <div class="chip">SKIN: <b id="skinName">SCI</b></div>
+          <div class="chip">XP: <b id="xpChip">0</b></div>
+          <div class="chip">LEVEL: <b id="lvlChip">1</b></div>
+          <div class="chip">API: <b id="apiChip">—</b></div>
+        </div>
+      </div>
+
+      <div class="tabs" id="tabs">
+        <button class="tabOn" data-tab="quest">QUEST</button>
+        <button data-tab="recon">RECON</button>
+        <button data-tab="modules">MODULES</button>
+        <button data-tab="seasons">SEASONS</button>
+        <div class="btnrow" style="margin-left:auto; padding-bottom:12px">
+          <button class="ghost" id="btnSkin">Skin</button>
+          <button class="ghost" id="btnReset">Reset Local</button>
+        </div>
+      </div>
+
+      <!-- QUEST TAB -->
+      <section id="tab-quest">
+        <div class="hd">
+          <div class="title">
+            <h2>Quest Request</h2>
+            <p>Feed the oracle. It crafts a real adventure using your recon modules + web context. PASS re-rolls.</p>
+          </div>
+          <div class="btnrow">
+            <button class="ghost" id="btnPing">Ping API</button>
+          </div>
+        </div>
+
+        <div class="body grid">
+          <!-- left: request + reveal -->
+          <div class="panel" style="box-shadow:none">
+            <div class="body" id="requestBody">
+              <div class="form" id="questForm">
+                <label>
+                  Time Available
+                  <select id="fTime">
+                    <option value="30m">30 minutes</option>
+                    <option value="60m" selected>60 minutes</option>
+                    <option value="2h">2 hours</option>
+                    <option value="halfday">Half-day</option>
+                  </select>
+                </label>
+
+                <label>
+                  Weather
+                  <select id="fWeather">
+                    <option value="auto" selected>Auto / vibes-only</option>
+                    <option value="sunny">Sunny</option>
+                    <option value="rainy">Rainy</option>
+                    <option value="cold">Cold</option>
+                    <option value="hot">Hot</option>
+                    <option value="windy">Windy</option>
+                  </select>
+                </label>
+
+                <label>
+                  Vibe
+                  <select id="fVibe">
+                    <option value="curious" selected>Curious</option>
+                    <option value="chill">Chill</option>
+                    <option value="active">Active</option>
+                    <option value="cozy">Cozy</option>
+                    <option value="mystery">Mystery</option>
+                    <option value="kid-picks">Kid picks</option>
+                  </select>
+                </label>
+
+                <label>
+                  Range
+                  <select id="fRange">
+                    <option value="walk">Walking</option>
+                    <option value="short-drive" selected>Short drive</option>
+                    <option value="long-drive">Longer drive</option>
+                  </select>
+                </label>
+
+                <label class="full">
+                  Where are we?
+                  <input id="fWhere" placeholder="City/area or ‘near me’..." />
+                </label>
+
+                <label class="full">
+                  Constraints (optional)
+                  <input id="fConstraints" placeholder="Budget, indoor only, stroller-friendly, avoid crowds..." />
+                </label>
+
+                <label class="full">
+                  Party names (optional)
+                  <input id="fParty" placeholder="Chance + Kiddo (or whatever you want)" />
+                </label>
+
+                <label class="full">
+                  Season (optional)
+                  <input id="fSeasonKey" placeholder="e.g. S1_SIGNAL_SHADOWS" />
+                </label>
+
+                <div class="full hint">
+                  This tab calls your Worker for <b>module-aware, web-aware quest generation</b>. If API is down, it falls back to a local rule generator.
+                </div>
+
+                <div class="full btnrow">
+                  <button class="primary" id="btnSummon">Summon Quest</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="body" id="revealWrap" style="display:none">
+              <div class="zoltar">
+                <p class="big">The Oracle Reveals...</p>
+                <h3 class="questTitle" id="rTitle">—</h3>
+                <p class="hook" id="rHook">—</p>
+                <div class="metaRow" id="rMeta"></div>
+
+                <div class="list">
+                  <div class="card">
+                    <h4>Primary Objectives</h4>
+                    <ol class="ol" id="rPrimary"></ol>
+                  </div>
+                  <div class="card">
+                    <h4>Side Quests</h4>
+                    <ol class="ol" id="rSide"></ol>
+                  </div>
+                </div>
+
+                <div class="sep"></div>
+
+                <div class="hint" id="rSources">Sources: —</div>
+                <div class="sep"></div>
+
+                <div class="btnrow" style="justify-content:space-between">
+                  <div class="hint" id="rArtifactsHint">Artifacts detected: —</div>
+                  <div class="btnrow">
+                    <button id="btnPass">Pass</button>
+                    <button class="good" id="btnAccept">Accept</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- right: console -->
+          <div class="panel" style="box-shadow:none">
+            <div id="consoleWrap" style="display:none">
+              <div class="consoleHeader">
+                <div class="qh">
+                  <p class="qs" id="cLine1">ACTIVE QUEST</p>
+                  <h3 class="qt" id="cTitle">—</h3>
+                  <p class="qs" id="cLine2">—</p>
+                </div>
+                <div class="statsStrip">
+                  <div class="statline" id="cScoreLine">PLUNDER SCORE: 0</div>
+                  <div class="xp" id="cXpLine">XP this quest: 0</div>
+                  <div class="bar"><i id="cProgBar"></i></div>
+                  <div class="bar side"><i id="cSideBar"></i></div>
+                </div>
+              </div>
+
+              <div class="consoleBody">
+                <div class="artifactRow">
+                  <div class="left">
+                    <b>Artifacts</b>
+                    <span id="cArtifactsSub">Tap to open the vault: maps, riddles, clues... maybe a red herring.</span>
+                  </div>
+                  <div class="btnrow">
+                    <button class="primary" id="btnArtifacts">Open Vault</button>
+                  </div>
+                </div>
+
+                <div class="scrollBox">
+                  <div class="sect">
+                    <h3>Primary Steps</h3>
+                    <div id="cPrimaryList"></div>
+                  </div>
+                  <div class="sect">
+                    <h3>Side Quests</h3>
+                    <div id="cSideList"></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="bottomNav">
+                <button class="primary" id="btnNext">TREK / NEXT</button>
+                <button id="btnLog">LOG</button>
+                <button id="btnMap">MAP</button>
+                <button class="danger" id="btnExit">EXIT</button>
+              </div>
+            </div>
+
+            <div class="body" id="packsWrap">
+              <div class="title" style="padding:14px 14px 0">
+                <h2>Adventure Packs (Local)</h2>
+                <p>Completed quests become packs. Export JSON any time.</p>
+              </div>
+              <div class="body" id="packList"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- RECON TAB -->
+      <section id="tab-recon" style="display:none">
+        <div class="hd">
+          <div class="title">
+            <h2>Recon Vault</h2>
+            <p>Drop URLs, notes, lists, lore fragments. The backend ingests → extracts modules → flags junk/conflicts.</p>
+          </div>
+          <div class="btnrow">
+            <button class="ghost" id="btnReconRefresh">Refresh</button>
+          </div>
+        </div>
+
+        <div class="body grid">
+          <div class="panel" style="box-shadow:none">
+            <div class="body">
+              <div class="form">
+                <label>
+                  Type
+                  <select id="reconType">
+                    <option value="url" selected>URL</option>
+                    <option value="text">Text</option>
+                    <option value="map_snippet">Map snippet</option>
+                  </select>
+                </label>
+                <label>
+                  Title (optional)
+                  <input id="reconTitle" placeholder="e.g. ‘Stranger Things nearby filming rumor’" />
+                </label>
+                <label class="full" id="reconUrlWrap">
+                  URL
+                  <input id="reconUrl" placeholder="Paste a link..." />
+                </label>
+                <label class="full" id="reconTextWrap" style="display:none">
+                  Text / Notes
+                  <textarea id="reconText" placeholder="Paste anything... lists, lore ideas, her writing snippets, movies you love, places you want..."></textarea>
+                </label>
+                <label class="full">
+                  Tags (comma)
+                  <input id="reconTags" placeholder="mystery, outdoors, snack, film, book, sports..." />
+                </label>
+
+                <div class="full hint">
+                  When you submit, the Worker will (1) store it, (2) extract text, (3) create 0–N modules, and (4) return quality notes if it’s weak/conflicting.
+                </div>
+                <div class="full btnrow">
+                  <button class="primary" id="btnReconAdd">Ingest Recon</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel" style="box-shadow:none">
+            <div class="body">
+              <div class="kpi" id="reconKpi"></div>
+              <div class="sep"></div>
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>When</th>
+                    <th>Type</th>
+                    <th>Title</th>
+                    <th>Quality</th>
+                    <th>Notes</th>
+                  </tr>
+                </thead>
+                <tbody id="reconList"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- MODULES TAB -->
+      <section id="tab-modules" style="display:none">
+        <div class="hd">
+          <div class="title">
+            <h2>Modules</h2>
+            <p>These are reusable quest building blocks extracted from recon. Quest generation selects from here.</p>
+          </div>
+          <div class="btnrow">
+            <button class="ghost" id="btnModulesRefresh">Refresh</button>
+          </div>
+        </div>
+
+        <div class="body">
+          <div class="form">
+            <label>
+              Filter tag (optional)
+              <input id="modTag" placeholder="mystery / outdoors / film / hike / cozy..." />
+            </label>
+            <label>
+              Season key (optional)
+              <input id="modSeason" placeholder="S1_SIGNAL_SHADOWS" />
+            </label>
+            <div class="btnrow full">
+              <button class="primary" id="btnModulesSearch">Search</button>
+            </div>
+          </div>
+          <div class="sep"></div>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Tags</th>
+                <th>Fit</th>
+                <th>Conf</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="modulesList"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- SEASONS TAB -->
+      <section id="tab-seasons" style="display:none">
+        <div class="hd">
+          <div class="title">
+            <h2>Seasons</h2>
+            <p>Plan an 8-week arc (6 episodes + fallbacks + finale). The AI uses your modules to build continuity.</p>
+          </div>
+          <div class="btnrow">
+            <button class="ghost" id="btnSeasonsRefresh">Refresh</button>
+          </div>
+        </div>
+
+        <div class="body grid">
+          <div class="panel" style="box-shadow:none">
+            <div class="body">
+              <div class="form">
+                <label class="full">
+                  Season Title
+                  <input id="seasonTitle" placeholder="Season 1: Signal & Shadows" />
+                </label>
+                <label>
+                  Theme Key
+                  <input id="seasonKey" placeholder="S1_SIGNAL_SHADOWS" />
+                </label>
+                <label>
+                  Weeks
+                  <select id="seasonWeeks">
+                    <option value="6">6</option>
+                    <option value="8" selected>8</option>
+                    <option value="10">10</option>
+                  </select>
+                </label>
+                <label class="full">
+                  Premise (1–3 sentences)
+                  <textarea id="seasonPremise" placeholder="A mysterious signal appears on the console... each adventure reveals a fragment... the finale unlocks the ‘Codex.’"></textarea>
+                </label>
+                <label class="full">
+                  Rules / Motifs (comma)
+                  <input id="seasonRules" placeholder="recurring symbol, map fragments, one ‘boss moment’ photo each episode, safe daylight only..." />
+                </label>
+                <label class="full">
+                  Finale Spec (what’s the payoff?)
+                  <textarea id="seasonFinale" placeholder="Culminate at a ‘treasure spot’ with a picnic + reveal + keepsake..."></textarea>
+                </label>
+
+                <div class="full btnrow">
+                  <button class="primary" id="btnSeasonCreate">Create Season</button>
+                  <button class="good" id="btnSeasonPlan">Generate 6-Episode Plan</button>
+                </div>
+                <div class="full hint">
+                  Planning uses modules you already ingested. Add recon for a week first, then plan.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel" style="box-shadow:none">
+            <div class="body">
+              <div class="kpi" id="seasonKpi"></div>
+              <div class="sep"></div>
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Season</th>
+                    <th>Key</th>
+                    <th>Weeks</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="seasonList"></tbody>
+              </table>
+
+              <div class="sep"></div>
+              <div class="artifactCard">
+                <h4>Episode Plan (preview)</h4>
+                <pre id="episodePreview" class="mono" style="white-space:pre-wrap; margin:0; color:var(--muted)">(none)</pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <!-- MODAL -->
+  <div class="modalBack" id="modalBack" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true">
+      <div class="mh">
+        <div class="t" id="modalTitle">—</div>
+        <div class="btnrow">
+          <button class="ghost" id="btnModalClose">Close</button>
+        </div>
+      </div>
+      <div class="mc" id="modalContent"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">—</div>
+
+<script>
+/* ===========================
+   Quest Console Unlisted (MakerApp)
+   - Tabs: QUEST / RECON / MODULES / SEASONS
+   - Backend: Cloudflare Worker + D1
+=========================== */
+
+/** SET THIS to your Worker base URL */
+const API_BASE = ""; // e.g. "https://quest-api.your-worker-subdomain.workers.dev"
+
+/** Local only packs + XP (can later move to backend) */
+const APP_KEY = "quest_console_unlisted_v1";
+
+const SKINS = ["sci","parch","cozy","map"];
+const SKIN_LABEL = {sci:"SCI", parch:"PARCH", cozy:"COZY", map:"MAP"};
+
+const $ = (id)=>document.getElementById(id);
+const nowISO = ()=> new Date().toISOString();
+const fmtDT = (d)=> new Date(d).toLocaleString(undefined,{weekday:"short",month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});
+const uid = ()=> (crypto?.randomUUID?.() || ("id_"+Math.random().toString(16).slice(2)+"_"+Date.now()));
+function clamp(n,a,b){return Math.max(a,Math.min(b,n));}
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[m])); }
+function pill(text){ const d=document.createElement("div"); d.className="pill"; d.textContent=text; return d; }
+
+function toast(msg){
+  const el = $("toast");
+  el.textContent = msg;
+  el.classList.add("show");
+  clearTimeout(toast._t);
+  toast._t = setTimeout(()=>el.classList.remove("show"), 1600);
+}
+
+function loadState(){
+  try{ const raw = localStorage.getItem(APP_KEY); return raw ? {...defaultState(), ...JSON.parse(raw)} : defaultState(); }
+  catch{ return defaultState(); }
+}
+function saveState(){ localStorage.setItem(APP_KEY, JSON.stringify(state)); updateTopChips(); }
+function defaultState(){ return { skin:"sci", xp_total:0, level:1, packs:[], activeQuest:null }; }
+let state = loadState();
+
+function xpToLevel(xp){ return 1 + Math.floor(xp / 1000); }
+function addXP(amount, reason=""){
+  state.xp_total += amount;
+  state.level = xpToLevel(state.xp_total);
+  saveState();
+  toast(reason ? `+${amount} XP • ${reason}` : `+${amount} XP`);
+}
+
+function setSkin(next){
+  state.skin = next;
+  document.body.setAttribute("data-skin", next);
+  $("skinName").textContent = SKIN_LABEL[next] || next.toUpperCase();
+  saveState();
+}
+function cycleSkin(){
+  const i = SKINS.indexOf(state.skin);
+  const next = SKINS[(i+1)%SKINS.length];
+  setSkin(next);
+  toast(`Skin: ${SKIN_LABEL[next]}`);
+}
+
+/* -------- Tabs -------- */
+function setTab(name){
+  ["quest","recon","modules","seasons"].forEach(t=>{
+    $("tab-"+t).style.display = (t===name) ? "" : "none";
+    [...$("tabs").querySelectorAll("button[data-tab]")].forEach(b=>{
+      if(b.dataset.tab===t) b.classList.toggle("tabOn", t===name);
+    });
+  });
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+$("tabs").addEventListener("click", (e)=>{
+  const btn = e.target.closest("button[data-tab]");
+  if(!btn) return;
+  setTab(btn.dataset.tab);
+});
+
+/* -------- API helper -------- */
+async function apiGet(path){
+  if(!API_BASE) throw new Error("API_BASE not set");
+  const res = await fetch(API_BASE + path, { method:"GET" });
+  if(!res.ok) throw new Error(await res.text());
+  return await res.json();
+}
+async function apiPost(path, body){
+  if(!API_BASE) throw new Error("API_BASE not set");
+  const res = await fetch(API_BASE + path, {
+    method:"POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify(body || {})
+  });
+  if(!res.ok) throw new Error(await res.text());
+  return await res.json();
+}
+
+/* -------- Modal -------- */
+function openModal(title, nodesOrHTML){
+  $("modalTitle").textContent = title;
+  const mc = $("modalContent");
+  mc.innerHTML = "";
+  if(typeof nodesOrHTML === "string"){
+    mc.innerHTML = nodesOrHTML;
+  }else if(Array.isArray(nodesOrHTML)){
+    nodesOrHTML.forEach(n=>mc.appendChild(n));
+  }else if(nodesOrHTML){
+    mc.appendChild(nodesOrHTML);
+  }
+  $("modalBack").classList.add("active");
+  $("modalBack").setAttribute("aria-hidden","false");
+}
+function closeModal(){
+  $("modalBack").classList.remove("active");
+  $("modalBack").setAttribute("aria-hidden","true");
+}
+$("btnModalClose").addEventListener("click", closeModal);
+$("modalBack").addEventListener("click", (e)=>{ if(e.target === $("modalBack")) closeModal(); });
+window.addEventListener("keydown", (e)=>{ if(e.key==="Escape") closeModal(); });
+
+/* -------- QUEST: Generator (API-first, fallback local) -------- */
+const FALLBACK_INTERESTS = [
+  {theme:"Mural Oracle Run", hooks:["Walls can speak. Find the one that sings today."], prim:["Find a mural/street art.","Capture a photo + name its guardian.","Log a quote + ‘what we learned’."], side:["Spot an animal (real or drawn).","Find 3 favorite colors and name them.","Texture photo: brick/bark/tile."], artifacts:[{type:"riddle",title:"Color Lock",text:"I am the color of the sky’s mirror. What color am I?",answer:"blue",hint:"Look up, then look down."}]},
+  {theme:"Forest Shrine Circuit", hooks:["The grove remembers. It wants a visitor."], prim:["Go to a green place.","Find an ‘Elder Tree’ photo.","Declare today’s forest rule."], side:["Listen for a bird call.","Find something older than 50 years.","Collect 3 ‘moon shards’ (leaf shapes)."], artifacts:[{type:"token",title:"Golden Acorn Token",text:"Awarded when you find a tree with ‘character’."}]}
+];
+
+function choose(arr){ return arr[Math.floor(Math.random()*arr.length)] }
+function shuffle(a){ const b=a.slice(); for(let i=b.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [b[i],b[j]]=[b[j],b[i]]; } return b; }
+function mkTask(text, primary, i){ return { id:uid(), text, primary, idx:i, done:false, xp: primary?100:150 }; }
+function localQuest(inputs){
+  const base = choose(FALLBACK_INTERESTS);
+  const primary = base.prim.map((t,i)=>mkTask(t,true,i));
+  const side = base.side.map((t,i)=>mkTask(t,false,i));
+  const artifacts = (base.artifacts||[]).map(a=>({id:uid(), status:"unseen", ...a}));
+  return {
+    id: uid(),
+    created_at: nowISO(),
+    status: "proposed",
+    inputs,
+    title: base.theme,
+    hook: choose(base.hooks),
+    est_duration: inputs.time,
+    primary, side, artifacts,
+    sources: [],
+    modules_used: [],
+    safety_notes: [],
+    scoring:{accept_xp:50, step_xp:100, side_xp:150, log_xp:75, selfie_xp:200, wonka_xp:150, herring_xp:300, complete_xp:500},
+    progress:{current_primary_index:0, xp_this_quest:0, plunder_score:0, memories:[]}
+  };
+}
+
+let proposedQuest = null;
+
+function renderReveal(q){
+  $("revealWrap").style.display = "";
+  $("rTitle").textContent = q.title || "—";
+  $("rHook").textContent = q.hook || "—";
+  const meta = $("rMeta"); meta.innerHTML = "";
+  meta.appendChild(pill(`TIME: ${q.inputs?.time||"—"}`));
+  meta.appendChild(pill(`WEATHER: ${q.inputs?.weather||"—"}`));
+  meta.appendChild(pill(`VIBE: ${q.inputs?.vibe||"—"}`));
+  meta.appendChild(pill(`RANGE: ${q.inputs?.range||"—"}`));
+  if(q.inputs?.where) meta.appendChild(pill(`WHERE: ${q.inputs.where}`));
+  if(q.theme) meta.appendChild(pill(`THEME: ${q.theme}`));
+
+  $("rPrimary").innerHTML = (q.primary||[]).map(t=>`<li>${escapeHtml(t.text)}</li>`).join("");
+  $("rSide").innerHTML = (q.side||[]).map(t=>`<li>${escapeHtml(t.text)}</li>`).join("");
+  $("rArtifactsHint").textContent = `Artifacts detected: ${(q.artifacts||[]).length}`;
+  const src = (q.sources||[]).slice(0,4).map(s=>s.title || s.url).filter(Boolean);
+  $("rSources").textContent = src.length ? `Sources: ${src.join(" • ")}` : "Sources: —";
+}
+
+function showConsole(on){
+  $("consoleWrap").style.display = on ? "" : "none";
+  $("packsWrap").style.display = on ? "none" : "";
+}
+
+function renderConsole(q){
+  $("cTitle").textContent = q.title || "—";
+  const party = q.inputs?.party?.trim() ? q.inputs.party.trim() : "You + Kid";
+  $("cLine1").textContent = `ACTIVE QUEST • ${party}`;
+  $("cLine2").textContent = `Started: ${q.started_at ? fmtDT(q.started_at) : "—"} • Weather: ${q.inputs?.weather||"—"} • Vibe: ${q.inputs?.vibe||"—"}`;
+
+  $("cScoreLine").textContent = `PLUNDER SCORE: ${q.progress?.plunder_score||0}`;
+  $("cXpLine").textContent = `XP this quest: ${q.progress?.xp_this_quest||0}`;
+
+  const prim = q.primary||[], side = q.side||[];
+  const primDone = prim.filter(t=>t.done).length, sideDone = side.filter(t=>t.done).length;
+  $("cProgBar").style.width = (prim.length ? Math.round((primDone/prim.length)*100) : 0) + "%";
+  $("cSideBar").style.width = (side.length ? Math.round((sideDone/side.length)*100) : 0) + "%";
+
+  const unseen = (q.artifacts||[]).filter(a=>a.status==="unseen").length;
+  $("cArtifactsSub").textContent = unseen ? `${unseen} unseen artifact(s) in the vault.` : `All artifacts have been seen.`;
+
+  $("cPrimaryList").innerHTML = "";
+  $("cSideList").innerHTML = "";
+  prim.forEach(t=> $("cPrimaryList").appendChild(taskRow(t, q)));
+  side.forEach(t=> $("cSideList").appendChild(taskRow(t, q)));
+}
+
+function taskRow(t, q){
+  const wrap = document.createElement("div"); wrap.className="task";
+  const cb = document.createElement("input"); cb.type="checkbox"; cb.checked=!!t.done;
+  cb.addEventListener("change", ()=>{
+    t.done = cb.checked;
+    if(t.done){
+      const xp = t.xp || (t.primary ? 100 : 150);
+      q.progress.xp_this_quest += xp;
+      q.progress.plunder_score += (t.primary ? 250 : 350);
+      addXP(xp, t.primary ? "Primary step" : "Side quest");
+    }else{
+      toast("Unchecked (no XP rollback).");
+    }
+    saveState();
+    renderConsole(q);
+  });
+
+  const txt = document.createElement("div"); txt.className="txt";
+  const line = document.createElement("div"); line.className="line"; line.textContent = t.text;
+  const sub = document.createElement("div"); sub.className="sub";
+  const b = document.createElement("span"); b.className = "badge " + (t.primary ? "warn":"good"); b.textContent = `+${t.xp|| (t.primary?100:150)} XP`;
+  sub.appendChild(b);
+
+  const logBtn = document.createElement("button");
+  logBtn.className="ghost"; logBtn.style.padding="8px 10px"; logBtn.style.borderRadius="12px";
+  logBtn.textContent="LOG MOMENT";
+  logBtn.addEventListener("click", ()=>openLogModal(q, {tag:"step", stepId:t.id}));
+  sub.appendChild(logBtn);
+
+  txt.appendChild(line); txt.appendChild(sub);
+  wrap.appendChild(cb); wrap.appendChild(txt);
+  return wrap;
+}
+
+/* Artifacts + Log (minimal; you can expand like previous build) */
+function openArtifacts(q){
+  const cards = [];
+  (q.artifacts||[]).forEach(a=>{
+    a.status = (a.status==="unseen") ? "seen" : a.status;
+    const c = document.createElement("div"); c.className="artifactCard";
+    c.innerHTML = `<h4>${escapeHtml((a.type||"artifact").toUpperCase())} • ${escapeHtml(a.title||"Artifact")}</h4><p>${escapeHtml(a.text||"")}</p>`;
+    if(a.type==="map"){
+      const img = document.createElement("img");
+      img.src = a.image_data_url || placeholderMap();
+      img.alt = "Map Artifact";
+      c.appendChild(img);
+      const row = document.createElement("div"); row.className="btnrow";
+      const nav = document.createElement("button"); nav.className="good"; nav.textContent="NAVIGATE";
+      nav.addEventListener("click", ()=>{
+        const qstr = encodeURIComponent(a.map_query || q.inputs?.where || "near me");
+        window.open(`https://www.google.com/maps/search/?api=1&query=${qstr}`, "_blank");
+      });
+      row.appendChild(nav);
+      c.appendChild(row);
+    }
+    cards.push(c);
+  });
+  saveState();
+  renderConsole(q);
+  openModal("Artifact Vault", cards);
+}
+
+function openLogModal(q){
+  const c = document.createElement("div"); c.className="artifactCard";
+  c.innerHTML = `<h4>Log a Memory</h4><p>Quote / Tags / Note. (Photo/audio can be added later with IndexedDB like the earlier MVP.)</p>`;
+  const row = document.createElement("div"); row.className="btnrow";
+
+  const quote = document.createElement("button"); quote.className="primary"; quote.textContent="QUOTE";
+  quote.addEventListener("click", ()=>{
+    const txt = prompt("Quote of the moment:");
+    if(!txt) return;
+    q.progress.memories.push({id:uid(), t:nowISO(), kind:"quote", text:txt.slice(0,500)});
+    q.progress.xp_this_quest += (q.scoring?.log_xp||75);
+    q.progress.plunder_score += 90;
+    addXP(q.scoring?.log_xp||75, "Memory logged");
+    saveState(); renderConsole(q); closeModal();
+  });
+
+  const tags = document.createElement("button"); tags.textContent="TAGS";
+  tags.addEventListener("click", ()=>{
+    const txt = prompt("Tags, comma-separated:", "wonka-zone, selfie, discovery");
+    if(!txt) return;
+    const t = txt.split(",").map(s=>s.trim()).filter(Boolean).slice(0,12);
+    q.progress.memories.push({id:uid(), t:nowISO(), kind:"tags", tags:t});
+    q.progress.xp_this_quest += (q.scoring?.log_xp||75);
+    q.progress.plunder_score += 60;
+    addXP(q.scoring?.log_xp||75, "Memory logged");
+    saveState(); renderConsole(q); closeModal();
+  });
+
+  const note = document.createElement("button"); note.textContent="NOTE";
+  note.addEventListener("click", ()=>{
+    const txt = prompt("One sentence about what happened:");
+    if(!txt) return;
+    q.progress.memories.push({id:uid(), t:nowISO(), kind:"note", text:txt.slice(0,900)});
+    q.progress.xp_this_quest += (q.scoring?.log_xp||75);
+    q.progress.plunder_score += 70;
+    addXP(q.scoring?.log_xp||75, "Memory logged");
+    saveState(); renderConsole(q); closeModal();
+  });
+
+  row.appendChild(quote); row.appendChild(tags); row.appendChild(note);
+  c.appendChild(row);
+  openModal("Log Memory", c);
+}
+
+function trekNext(q){
+  const idx = (q.primary||[]).findIndex(t=>!t.done);
+  if(idx===-1){ toast("Primary objectives complete."); return; }
+  q.progress.current_primary_index = idx;
+  toast(`Room ${idx+1}: ${q.primary[idx].text}`);
+  saveState(); renderConsole(q);
+}
+
+function openMap(q){
+  const a = (q.artifacts||[]).find(x=>x.type==="map");
+  if(a) return openArtifacts(q);
+  const qstr = encodeURIComponent(q.inputs?.where || "near me");
+  window.open(`https://www.google.com/maps/search/?api=1&query=${qstr}`, "_blank");
+}
+
+function completeQuest(q){
+  q.status = "completed";
+  q.ended_at = nowISO();
+  const allPrimDone = (q.primary||[]).every(t=>t.done);
+  if(allPrimDone){
+    q.progress.plunder_score += 1000;
+    q.progress.xp_this_quest += (q.scoring?.complete_xp||500);
+    addXP(q.scoring?.complete_xp||500, "Quest complete");
+  }else{
+    q.progress.plunder_score += 300;
+    addXP(150, "Quest ended (partial)");
+  }
+
+  const pack = {
+    id: uid(),
+    quest_id: q.id,
+    title: q.title,
+    created_at: nowISO(),
+    started_at: q.started_at,
+    ended_at: q.ended_at,
+    inputs: q.inputs,
+    hook: q.hook,
+    theme: q.theme || "",
+    stats: {
+      plunder_score: q.progress.plunder_score,
+      xp_this_quest: q.progress.xp_this_quest,
+      primary_done: (q.primary||[]).filter(t=>t.done).length,
+      primary_total: (q.primary||[]).length,
+      side_done: (q.side||[]).filter(t=>t.done).length,
+      side_total: (q.side||[]).length,
+      memories: (q.progress.memories||[]).length
+    },
+    primary: q.primary||[],
+    side: q.side||[],
+    artifacts: q.artifacts||[],
+    memories: q.progress.memories||[],
+    sources: q.sources||[],
+    modules_used: q.modules_used||[]
+  };
+
+  state.packs.unshift(pack);
+  state.activeQuest = null;
+  saveState();
+  renderPacks();
+  showConsole(false);
+  toast("Adventure Pack created.");
+}
+
+function exportJSON(obj, filename){
+  const blob = new Blob([JSON.stringify(obj,null,2)], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+  toast("Exported JSON.");
+}
+function slug(s){ return String(s).toLowerCase().replace(/[^a-z0-9]+/g,"_").replace(/^_+|_+$/g,"").slice(0,60); }
+
+function renderPacks(){
+  const root = $("packList");
+  root.innerHTML = "";
+  if(!state.packs.length){
+    root.innerHTML = `<div class="hint">No packs yet. Summon → Accept → Complete.</div>`;
+    return;
+  }
+  state.packs.forEach(pack=>{
+    const card = document.createElement("div"); card.className="artifactCard";
+    card.innerHTML = `
+      <h4>${escapeHtml(pack.title)}</h4>
+      <p class="mono" style="color:var(--muted2)">
+        ${escapeHtml(fmtDT(pack.started_at||pack.created_at))} • Score ${pack.stats.plunder_score} • Memories ${pack.stats.memories}
+      </p>
+    `;
+    const row = document.createElement("div"); row.className="btnrow";
+    const view = document.createElement("button"); view.className="primary"; view.textContent="VIEW";
+    view.addEventListener("click", ()=>openModal("Adventure Pack", `<pre class="mono" style="white-space:pre-wrap;margin:0;color:var(--muted)">${escapeHtml(JSON.stringify(pack,null,2))}</pre>`));
+    const exp = document.createElement("button"); exp.textContent="EXPORT JSON";
+    exp.addEventListener("click", ()=>exportJSON(pack, `adventure_pack_${slug(pack.title)}.json`));
+    const del = document.createElement("button"); del.className="danger"; del.textContent="DELETE";
+    del.addEventListener("click", ()=>{
+      if(!confirm("Delete pack?")) return;
+      state.packs = state.packs.filter(p=>p.id!==pack.id);
+      saveState();
+      renderPacks();
+    });
+    row.appendChild(view); row.appendChild(exp); row.appendChild(del);
+    card.appendChild(row);
+    root.appendChild(card);
+  });
+}
+
+function placeholderMap(){
+  const svg = `
+  <svg xmlns="http://www.w3.org/2000/svg" width="900" height="520">
+    <defs><linearGradient id="g" x1="0" x2="1">
+      <stop offset="0" stop-color="rgba(116,214,255,0.35)"/>
+      <stop offset="1" stop-color="rgba(180,140,255,0.35)"/>
+    </linearGradient></defs>
+    <rect width="100%" height="100%" fill="rgba(0,0,0,0.35)"/>
+    <rect x="18" y="18" width="864" height="484" rx="26" fill="url(#g)" opacity="0.25" stroke="rgba(255,255,255,0.18)"/>
+    <path d="M120 410 C240 260, 380 280, 520 180 S780 160, 820 120" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="10" stroke-linecap="round"/>
+    <circle cx="820" cy="120" r="18" fill="rgba(255,77,109,0.85)"/>
+    <circle cx="120" cy="410" r="18" fill="rgba(88,242,157,0.85)"/>
+    <text x="60" y="90" fill="rgba(255,255,255,0.70)" font-family="monospace" font-size="26">MAP ARTIFACT</text>
+    <text x="60" y="125" fill="rgba(255,255,255,0.55)" font-family="monospace" font-size="18">Replace with a real map image later.</text>
+  </svg>`;
+  return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+}
+
+/* ---------- QUEST buttons ---------- */
+$("btnSummon").addEventListener("click", async ()=>{
+  const inputs = {
+    time: $("fTime").value,
+    weather: $("fWeather").value,
+    vibe: $("fVibe").value,
+    range: $("fRange").value,
+    where: ($("fWhere").value||"").trim(),
+    constraints: ($("fConstraints").value||"").trim(),
+    party: ($("fParty").value||"").trim()
+  };
+  const season_key = ($("fSeasonKey").value||"").trim();
+  const avoid_titles = state.packs.slice(0,8).map(p=>p.title).filter(Boolean);
+
+  toast("Summoning...");
+  let q = null;
+  if(API_BASE){
+    try{
+      q = await apiPost("/api/quest/generate", { inputs, avoid_titles, season_key: season_key || null });
+    }catch(e){
+      console.warn(e);
+      toast("API failed, using fallback.");
+    }
+  }
+  if(!q) q = localQuest(inputs);
+
+  proposedQuest = q;
+  renderReveal(q);
+});
+
+$("btnPass").addEventListener("click", async ()=>{
+  if(!proposedQuest) return;
+  const inputs = proposedQuest.inputs;
+  const season_key = ($("fSeasonKey").value||"").trim();
+  const avoid_titles = [proposedQuest.title, ...state.packs.slice(0,8).map(p=>p.title).filter(Boolean)];
+  toast("Re-rolling...");
+  let q=null;
+  if(API_BASE){
+    try{
+      q = await apiPost("/api/quest/generate", { inputs, avoid_titles, season_key: season_key || null });
+    }catch(e){
+      console.warn(e); toast("API failed, using fallback.");
+    }
+  }
+  if(!q) q = localQuest(inputs);
+  proposedQuest = q;
+  renderReveal(q);
+});
+
+$("btnAccept").addEventListener("click", ()=>{
+  if(!proposedQuest) return;
+  const q = proposedQuest;
+  q.status = "active";
+  q.started_at = nowISO();
+  state.activeQuest = q;
+  proposedQuest = null;
+
+  q.progress.xp_this_quest += (q.scoring?.accept_xp||50);
+  q.progress.plunder_score += 100;
+  addXP(q.scoring?.accept_xp||50, "Quest accepted");
+
+  saveState();
+  renderConsole(state.activeQuest);
+  showConsole(true);
+});
+
+$("btnArtifacts").addEventListener("click", ()=> state.activeQuest && openArtifacts(state.activeQuest));
+$("btnLog").addEventListener("click", ()=> state.activeQuest && openLogModal(state.activeQuest));
+$("btnNext").addEventListener("click", ()=> state.activeQuest && trekNext(state.activeQuest));
+$("btnMap").addEventListener("click", ()=> state.activeQuest && openMap(state.activeQuest));
+$("btnExit").addEventListener("click", ()=>{
+  const q = state.activeQuest;
+  if(!q) return;
+  const choice = prompt("Type one:\nCOMPLETE\nPAUSE\nABANDON", "PAUSE");
+  if(!choice) return;
+  const c = choice.trim().toLowerCase();
+  if(c==="pause"){
+    q.status = "paused";
+    state.activeQuest = q;
+    saveState();
+    showConsole(false);
+    renderPacks();
+    toast("Quest paused.");
+  }else if(c==="abandon"){
+    if(!confirm("Abandon quest?")) return;
+    state.activeQuest = null;
+    saveState();
+    showConsole(false);
+    renderPacks();
+    toast("Quest abandoned.");
+  }else if(c==="complete"){
+    completeQuest(q);
+  }else{
+    toast("Unknown command.");
+  }
+});
+
+/* ---------- RECON tab ---------- */
+function reconTypeUI(){
+  const t = $("reconType").value;
+  $("reconUrlWrap").style.display = (t==="url") ? "" : "none";
+  $("reconTextWrap").style.display = (t==="text" || t==="map_snippet") ? "" : "none";
+}
+$("reconType").addEventListener("change", reconTypeUI);
+
+$("btnReconAdd").addEventListener("click", async ()=>{
+  const type = $("reconType").value;
+  const title = ($("reconTitle").value||"").trim();
+  const url = ($("reconUrl").value||"").trim();
+  const text = ($("reconText").value||"").trim();
+  const tags = ($("reconTags").value||"").split(",").map(s=>s.trim()).filter(Boolean);
+
+  if(!API_BASE){ toast("Set API_BASE first."); return; }
+  if(type==="url" && !url){ toast("Paste a URL."); return; }
+  if((type==="text"||type==="map_snippet") && !text){ toast("Paste text."); return; }
+
+  toast("Ingesting...");
+  try{
+    const out = await apiPost("/api/recon/add", { type, title: title||null, url: url||null, text: text||null, tags });
+    toast(`Recon ingested. Modules: ${out.modules_created || 0}`);
+    $("reconUrl").value=""; $("reconText").value=""; $("reconTitle").value="";
+    await refreshRecon();
+  }catch(e){
+    console.error(e);
+    toast("Recon ingest failed.");
+    openModal("Recon ingest error", `<pre class="mono" style="white-space:pre-wrap;margin:0;color:var(--muted)">${escapeHtml(String(e))}</pre>`);
+  }
+});
+
+$("btnReconRefresh").addEventListener("click", refreshRecon);
+
+async function refreshRecon(){
+  if(!API_BASE){ $("reconList").innerHTML = `<tr><td colspan="5">Set API_BASE first.</td></tr>`; return; }
+  const data = await apiGet("/api/recon/list?limit=50");
+  const items = data.items || [];
+  $("reconKpi").innerHTML = "";
+  $("reconKpi").appendChild(pill(`ITEMS: ${items.length}`));
+  $("reconKpi").appendChild(pill(`MODULES: ${data.module_count || 0}`));
+
+  const tbody = $("reconList");
+  tbody.innerHTML = "";
+  items.forEach(it=>{
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${escapeHtml(fmtDT(it.created_at))}</td>
+      <td>${escapeHtml(it.type)}</td>
+      <td>${escapeHtml(it.title || it.source_url || "(untitled)")}</td>
+      <td>${escapeHtml(String(Math.round((it.quality_score||0.5)*100)))}%</td>
+      <td>${escapeHtml(it.quality_notes || "")}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+/* ---------- MODULES tab ---------- */
+$("btnModulesRefresh").addEventListener("click", ()=>refreshModules());
+$("btnModulesSearch").addEventListener("click", ()=>refreshModules());
+
+async function refreshModules(){
+  if(!API_BASE){ $("modulesList").innerHTML = `<tr><td colspan="5">Set API_BASE first.</td></tr>`; return; }
+  const tag = ($("modTag").value||"").trim();
+  const season_key = ($("modSeason").value||"").trim();
+  const qs = new URLSearchParams();
+  if(tag) qs.set("tag", tag);
+  if(season_key) qs.set("season_key", season_key);
+  qs.set("limit","60");
+  const data = await apiGet("/api/modules/list?"+qs.toString());
+  const mods = data.items || [];
+  const tbody = $("modulesList");
+  tbody.innerHTML = "";
+
+  mods.forEach(m=>{
+    const fit = [];
+    if(m.duration_fit?.length) fit.push("time:"+m.duration_fit.join("/"));
+    if(m.range_fit?.length) fit.push("range:"+m.range_fit.join("/"));
+    if(m.weather_fit?.length) fit.push("wx:"+m.weather_fit.join("/"));
+    if(m.vibe) fit.push("vibe:"+m.vibe);
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${escapeHtml(m.title)}</td>
+      <td>${escapeHtml((m.tags||[]).slice(0,6).join(", "))}</td>
+      <td>${escapeHtml(fit.join(" • "))}</td>
+      <td>${escapeHtml(String(Math.round((m.confidence||0.6)*100)))}%</td>
+      <td></td>
+    `;
+    const td = tr.querySelector("td:last-child");
+
+    const view = document.createElement("button");
+    view.className="primary";
+    view.textContent="VIEW";
+    view.addEventListener("click", ()=>{
+      openModal("Module", `<pre class="mono" style="white-space:pre-wrap;margin:0;color:var(--muted)">${escapeHtml(JSON.stringify(m,null,2))}</pre>`);
+    });
+
+    const fb = document.createElement("button");
+    fb.textContent="FEEDBACK";
+    fb.addEventListener("click", async ()=>{
+      const rating = Number(prompt("Rating 1–5:", "5"));
+      const note = prompt("Note (optional):", "");
+      if(!API_BASE) return;
+      await apiPost("/api/feedback", { kind:"module", target_id:m.id, rating: isFinite(rating)?rating:null, note: note||null, action:"keep" });
+      toast("Feedback saved.");
+    });
+
+    td.appendChild(view);
+    td.appendChild(fb);
+    tbody.appendChild(tr);
+  });
+}
+
+/* ---------- SEASONS tab ---------- */
+$("btnSeasonsRefresh").addEventListener("click", refreshSeasons);
+
+$("btnSeasonCreate").addEventListener("click", async ()=>{
+  if(!API_BASE){ toast("Set API_BASE first."); return; }
+  const title = ($("seasonTitle").value||"").trim();
+  const theme_key = ($("seasonKey").value||"").trim();
+  const duration_weeks = Number($("seasonWeeks").value);
+  const premise = ($("seasonPremise").value||"").trim();
+  const rules = ($("seasonRules").value||"").split(",").map(s=>s.trim()).filter(Boolean);
+  const finale_spec = ($("seasonFinale").value||"").trim();
+  if(!title || !theme_key || !premise){ toast("Fill title, key, premise."); return; }
+
+  toast("Creating season...");
+  const out = await apiPost("/api/season/create", { title, theme_key, duration_weeks, premise, rules, finale_spec });
+  toast("Season created.");
+  await refreshSeasons();
+  openModal("Season created", `<pre class="mono" style="white-space:pre-wrap;margin:0;color:var(--muted)">${escapeHtml(JSON.stringify(out,null,2))}</pre>`);
+});
+
+$("btnSeasonPlan").addEventListener("click", async ()=>{
+  if(!API_BASE){ toast("Set API_BASE first."); return; }
+  const theme_key = ($("seasonKey").value||"").trim();
+  if(!theme_key){ toast("Set Theme Key first."); return; }
+  toast("Planning...");
+  const out = await apiPost("/api/season/plan", { theme_key, episodes: 6 });
+  toast("Plan generated.");
+  $("episodePreview").textContent = JSON.stringify(out.episodes || [], null, 2);
+  await refreshSeasons();
+});
+
+async function refreshSeasons(){
+  if(!API_BASE){ $("seasonList").innerHTML = `<tr><td colspan="4">Set API_BASE first.</td></tr>`; return; }
+  const data = await apiGet("/api/season/list");
+  const seasons = data.items || [];
+  $("seasonKpi").innerHTML = "";
+  $("seasonKpi").appendChild(pill(`SEASONS: ${seasons.length}`));
+  $("seasonKpi").appendChild(pill(`MODULES: ${data.module_count || 0}`));
+
+  const tbody = $("seasonList");
+  tbody.innerHTML = "";
+  seasons.forEach(s=>{
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${escapeHtml(s.title)}</td>
+      <td>${escapeHtml(s.theme_key)}</td>
+      <td>${escapeHtml(String(s.duration_weeks))}</td>
+      <td></td>
+    `;
+    const td = tr.querySelector("td:last-child");
+    const view = document.createElement("button");
+    view.className="primary";
+    view.textContent="VIEW";
+    view.addEventListener("click", ()=>{
+      openModal("Season", `<pre class="mono" style="white-space:pre-wrap;margin:0;color:var(--muted)">${escapeHtml(JSON.stringify(s,null,2))}</pre>`);
+    });
+    td.appendChild(view);
+    tbody.appendChild(tr);
+  });
+}
+
+/* ---------- Ping API + boot ---------- */
+async function pingAPI(){
+  if(!API_BASE){
+    $("apiChip").textContent = "OFF";
+    return;
+  }
+  try{
+    const data = await apiGet("/api/ping");
+    $("apiChip").textContent = "ON";
+    toast(`API OK • ${data.version || "v?"}`);
+  }catch(e){
+    console.warn(e);
+    $("apiChip").textContent = "ERR";
+    toast("API ping failed.");
+  }
+}
+$("btnPing").addEventListener("click", pingAPI);
+
+$("btnSkin").addEventListener("click", cycleSkin);
+$("btnReset").addEventListener("click", ()=>{
+  if(!confirm("Reset local XP/packs/active quest? (Recon/modules remain on server)")) return;
+  localStorage.removeItem(APP_KEY);
+  state = defaultState();
+  setSkin("sci");
+  proposedQuest=null;
+  saveState();
+  renderPacks();
+  showConsole(false);
+  toast("Local reset complete.");
+});
+
+function updateTopChips(){
+  $("xpChip").textContent = state.xp_total;
+  $("lvlChip").textContent = state.level;
+}
+function boot(){
+  setSkin(state.skin || "sci");
+  updateTopChips();
+  renderPacks();
+  reconTypeUI();
+
+  if(state.activeQuest && state.activeQuest.status !== "completed"){
+    renderConsole(state.activeQuest);
+    showConsole(true);
+  }else{
+    showConsole(false);
+  }
+
+  pingAPI();
+}
+boot();
+</script>
+</body>
+</html>
+
+
+⸻
+
+2) Cloudflare Worker + D1 backend (OpenRouter-powered)
+
+2.1 schema.sql (D1 migration)
+
+-- Recon items
+CREATE TABLE IF NOT EXISTS recon_items (
+  id TEXT PRIMARY KEY,
+  created_at TEXT NOT NULL,
+  type TEXT NOT NULL,          -- url | text | map_snippet
+  title TEXT,
+  source_url TEXT,
+  raw_text TEXT,
+  raw_meta TEXT,               -- json string
+  parse_status TEXT NOT NULL,  -- new | parsed | failed
+  quality_score REAL DEFAULT 0.5,
+  quality_notes TEXT
+);
+
+-- Modules extracted from recon
+CREATE TABLE IF NOT EXISTS modules (
+  id TEXT PRIMARY KEY,
+  created_at TEXT NOT NULL,
+  title TEXT NOT NULL,
+  summary TEXT NOT NULL,
+  tags TEXT NOT NULL,          -- json array string
+  vibe TEXT,
+  weather_fit TEXT,            -- json array string
+  duration_fit TEXT,           -- json array string
+  range_fit TEXT,              -- json array string
+  location_hint TEXT,
+  lat REAL,
+  lng REAL,
+  confidence REAL DEFAULT 0.6,
+  season_key TEXT,
+  payload TEXT NOT NULL        -- json object string
+);
+
+CREATE TABLE IF NOT EXISTS module_sources (
+  module_id TEXT NOT NULL,
+  recon_id TEXT NOT NULL,
+  note TEXT,
+  PRIMARY KEY (module_id, recon_id)
+);
+
+-- Seasons
+CREATE TABLE IF NOT EXISTS seasons (
+  id TEXT PRIMARY KEY,
+  created_at TEXT NOT NULL,
+  title TEXT NOT NULL,
+  theme_key TEXT NOT NULL,
+  premise TEXT NOT NULL,
+  duration_weeks INTEGER NOT NULL,
+  rules TEXT NOT NULL,         -- json array string
+  finale_spec TEXT NOT NULL    -- string
+);
+
+CREATE TABLE IF NOT EXISTS season_episodes (
+  id TEXT PRIMARY KEY,
+  season_id TEXT NOT NULL,
+  idx INTEGER NOT NULL,
+  title TEXT NOT NULL,
+  synopsis TEXT NOT NULL,
+  preferred_window TEXT,
+  module_plan TEXT NOT NULL,   -- json: module ids + fallbacks
+  status TEXT NOT NULL
+);
+
+-- Feedback loop
+CREATE TABLE IF NOT EXISTS feedback (
+  id TEXT PRIMARY KEY,
+  created_at TEXT NOT NULL,
+  kind TEXT NOT NULL,          -- recon | module | quest
+  target_id TEXT NOT NULL,
+  rating INTEGER,
+  note TEXT,
+  action TEXT
+);
+
+
+⸻
+
+2.2 wrangler.toml
+
+name = "quest-console-api"
+main = "src/index.ts"
+compatibility_date = "2025-12-15"
+
+[vars]
+APP_VERSION = "1.0.0"
+OPENROUTER_MODEL = "openai/gpt-4.1-mini" # good + cheap. upgrade later.
+
+# Optional: keep lore tone consistent
+LORE_STYLE = "mystic-console"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "quest_console"
+database_id = "REPLACE_WITH_YOUR_D1_ID"
+
+# Secrets (set via `wrangler secret put ...`)
+# OPENROUTER_API_KEY
+# OPTIONAL: ALLOWED_ORIGIN (if you want strict CORS)
+
+
+⸻
+
+2.3 src/index.ts
+
+export interface Env {
+  DB: D1Database;
+  APP_VERSION: string;
+  OPENROUTER_API_KEY: string;
+  OPENROUTER_MODEL: string;
+  LORE_STYLE?: string;
+  ALLOWED_ORIGIN?: string;
+}
+
+type Json = Record<string, any>;
+
+function json(body: any, init: ResponseInit = {}) {
+  const headers = new Headers(init.headers);
+  headers.set("Content-Type", "application/json; charset=utf-8");
+  headers.set("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+  headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  headers.set("Access-Control-Allow-Origin", "*"); // tighten with ALLOWED_ORIGIN if desired
+  return new Response(JSON.stringify(body, null, 2), { ...init, headers });
+}
+
+function err(status: number, message: string, extra?: any) {
+  return json({ error: message, ...extra }, { status });
+}
+
+function uid() {
+  return crypto.randomUUID();
+}
+
+function nowISO() {
+  return new Date().toISOString();
+}
+
+async function readJson(req: Request): Promise<Json> {
+  try { return await req.json(); } catch { return {}; }
+}
+
+/** Very lightweight HTML → text extraction (good enough for MVP). */
+function stripHtml(html: string): string {
+  // Remove script/style
+  html = html.replace(/<script[\s\S]*?<\/script>/gi, " ");
+  html = html.replace(/<style[\s\S]*?<\/style>/gi, " ");
+  // Remove tags
+  const text = html.replace(/<[^>]+>/g, " ");
+  // Decode basic entities
+  return text
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function safeTruncate(s: string, max: number) {
+  if (!s) return s;
+  return s.length > max ? s.slice(0, max) : s;
+}
+
+function parseTags(csvOrArray: any): string[] {
+  if (!csvOrArray) return [];
+  if (Array.isArray(csvOrArray)) return csvOrArray.map(String).map(s => s.trim()).filter(Boolean).slice(0, 20);
+  return String(csvOrArray).split(",").map(s => s.trim()).filter(Boolean).slice(0, 20);
+}
+
+/** --- OpenRouter chat completion --- */
+async function chatOR(env: Env, messages: Array<{role: string, content: string}>, opts?: { temperature?: number, max_tokens?: number }) {
+  const model = env.OPENROUTER_MODEL || "openai/gpt-4.1-mini";
+  const temperature = opts?.temperature ?? 0.7;
+  const max_tokens = opts?.max_tokens ?? 1200;
+
+  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${env.OPENROUTER_API_KEY}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      model,
+      temperature,
+      max_tokens,
+      messages
+    })
+  });
+
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error(`OpenRouter error: ${res.status} ${txt}`);
+  }
+  const data: any = await res.json();
+  const content = data?.choices?.[0]?.message?.content;
+  if (!content) throw new Error("No content from OpenRouter");
+  return content as string;
+}
+
+/** --- Strict JSON parse helper --- */
+function extractJsonStrict(text: string): any {
+  // If model returns extra, try to locate first { ... } block.
+  const firstBrace = text.indexOf("{");
+  const lastBrace = text.lastIndexOf("}");
+  if (firstBrace === -1 || lastBrace === -1 || lastBrace <= firstBrace) {
+    throw new Error("No JSON object found");
+  }
+  const slice = text.slice(firstBrace, lastBrace + 1);
+  return JSON.parse(slice);
+}
+
+/** --- Anti-boring quick checks (server-side guardrail) --- */
+function hasGenericStep(step: string): boolean {
+  const s = step.toLowerCase();
+  const bad = [
+    "go for a walk",
+    "take a walk",
+    "find 5",
+    "find five",
+    "look at the sky",
+    "go outside",
+    "visit a park", // without specifics
+  ];
+  return bad.some(x => s.includes(x));
+}
+
+function validateQuest(q: any) {
+  if (!q || typeof q !== "object") throw new Error("Quest is not an object");
+  if (!q.title || !q.hook || !q.inputs) throw new Error("Quest missing title/hook/inputs");
+  if (!Array.isArray(q.primary) || q.primary.length < 3) throw new Error("Quest needs at least 3 primary steps");
+  for (const t of q.primary) {
+    if (!t?.text || hasGenericStep(String(t.text))) throw new Error("Quest contains generic primary step");
+  }
+  // side quests can be fewer, but still must be non-generic
+  if (Array.isArray(q.side)) {
+    for (const s of q.side) {
+      if (s?.text && hasGenericStep(String(s.text))) throw new Error("Quest contains generic side step");
+    }
+  }
+}
+
+/** --- Module extraction prompt --- */
+function moduleExtractionPrompt(recon: {type: string, title?: string, source_url?: string, raw_text: string, tags: string[]}) {
+  return [
+`You are QUEST MODULE EXTRACTOR for a parent+child "Quest Console".`,
+`Goal: Convert recon into reusable, situation-aware Modules that can be assembled into real adventures.`,
+`Hard bans: do NOT create generic modules like "go for a walk", "find 5 red birds", etc.`,
+`A Module MUST be specific, actionable, and ideally tied to a place/anchor or a clear themed activity.`,
+`If recon is low quality / vague / conflicting, output modules=[] and provide quality_score and quality_notes explaining why.`,
+
+`Return ONLY JSON with this schema:`,
+`{
+  "quality_score": 0.0-1.0,
+  "quality_notes": "string",
+  "modules": [
+    {
+      "title": "string",
+      "summary": "string",
+      "tags": ["..."],
+      "vibe": "curious|chill|active|cozy|mystery|kid-picks|null",
+      "weather_fit": ["auto","sunny","rainy","cold","hot","windy"],
+      "duration_fit": ["30m","60m","2h","halfday"],
+      "range_fit": ["walk","short-drive","long-drive"],
+      "location_hint": "optional place name",
+      "lat": null,
+      "lng": null,
+      "confidence": 0.0-1.0,
+      "payload": {
+        "anchor": {"name":"optional","note":"optional"},
+        "beats": [
+          {"kind":"step","text":"..."},
+          {"kind":"boss_moment","text":"..."},
+          {"kind":"artifact","type":"map|riddle|image|herring|token","title":"...","text":"...","answer":null,"hint":null,"map_query":null}
+        ]
+      }
+    }
+  ]
+}`,
+`Recon type: ${recon.type}`,
+`Recon title: ${recon.title || ""}`,
+`Recon url: ${recon.source_url || ""}`,
+`User tags: ${recon.tags.join(", ")}`,
+`Recon text (may be long):`,
+safeTruncate(recon.raw_text, 8000)
+  ].join("\n");
+}
+
+/** --- Quest author prompt --- */
+function questAuthorPrompt(args: {inputs: any, avoid_titles: string[], season: any|null, modules: any[]}) {
+  const { inputs, avoid_titles, season, modules } = args;
+
+  return [
+`You are QUEST AUTHOR, a location-aware adventure designer for a parent and child.`,
+`Your output must feel like a "questing console": lore, quirks, Zoltar reveal energy — but also real, feasible, and specific.`,
+`Hard bans: NEVER output generic filler like "go for a walk", "find 5 red birds", "look at the sky".`,
+`Every step must be SPECIFIC, SITUATED, and PLAUSIBLE given time/weather/range.`,
+`You will be given candidate Modules (building blocks) extracted from recon. Use them.`,
+`If modules are insufficient, you may invent ONE bridging beat, but keep it specific and anchored to the user's location string.`,
+
+`Avoid repeating titles: ${avoid_titles.slice(0,10).join(" | ") || "(none)"}`,
+
+season ? [
+`SEASON CONTEXT:`,
+`Season title: ${season.title}`,
+`Theme key: ${season.theme_key}`,
+`Premise: ${season.premise}`,
+`Rules: ${season.rules || "[]"}`,
+`Finale spec: ${season.finale_spec}`
+].join("\n") : `SEASON CONTEXT: none`,
+
+`USER INPUTS:`,
+JSON.stringify(inputs, null, 2),
+
+`AVAILABLE MODULES (pick 2–4 that fit the situation; cite them in modules_used):`,
+JSON.stringify(modules.slice(0, 10), null, 2),
+
+`Return ONLY strict JSON in this schema (no extra text):`,
+`{
+  "id":"uuid",
+  "created_at":"ISO",
+  "status":"proposed",
+  "inputs":{...},
+  "title":"string (unique, evocative)",
+  "hook":"string (2–3 sentences, lore + local)",
+  "est_duration":"30m|60m|2h|halfday",
+  "theme":"optional season title",
+  "anchor":{"name":"optional","lat":null,"lng":null,"travel_minutes":null},
+  "primary":[{"id":"uuid","text":"...","primary":true,"idx":0,"done":false,"xp":100}, ... 3-6],
+  "side":[{"id":"uuid","text":"...","primary":false,"idx":0,"done":false,"xp":150}, ... 2-5],
+  "artifacts":[{"id":"uuid","type":"map|riddle|image|herring|token","title":"...","text":"...","status":"unseen","answer":null,"hint":null,"map_query":null,"poi":{"name":null,"lat":null,"lng":null}}],
+  "modules_used":[{"module_id":"...","title":"...","confidence":0.0-1.0}],
+  "sources":[{"title":"...","url":"...","note":"..."}],
+  "safety_notes":["..."],
+  "scoring":{"accept_xp":50,"step_xp":100,"side_xp":150,"log_xp":75,"selfie_xp":200,"wonka_xp":150,"herring_xp":300,"complete_xp":500},
+  "progress":{"current_primary_index":0,"xp_this_quest":0,"plunder_score":0,"memories":[]}
+}`,
+
+`Rules for writing steps:`,
+`- Include at least one "Boss Moment" step that forces a great photo + quote.`,
+`- Side quests must reinforce the theme (not random scavenger).`,
+`- Include 1–3 artifacts; at least one must meaningfully advance the quest (map clue or riddle tied to module content).`,
+`- Provide 1–5 sources IF you make factual claims (movie filming, hours, etc). If you cannot cite, soften language.`,
+`- Ensure steps are safe, legal, kid-friendly.`
+
+  ].join("\n");
+}
+
+/** --- Season planner prompt --- */
+function seasonPlanPrompt(season: any, modules: any[], episodes: number) {
+  return [
+`You are SEASON PLANNER for a parent+child questing console.`,
+`Goal: create a coherent ${episodes}-episode arc that uses existing modules and culminates in the Finale.`,
+`Each episode must include a primary module plan + 1-2 fallback modules.`,
+`Output ONLY JSON: {"episodes":[{ "idx":1, "title":"...", "synopsis":"...", "module_plan":{ "primary":["module_id"], "fallback":["module_id"] } }...]}`,
+`Season:`,
+JSON.stringify(season, null, 2),
+`Available modules (top 25):`,
+JSON.stringify(modules.slice(0, 25), null, 2)
+  ].join("\n");
+}
+
+/** --- DB helpers --- */
+async function dbCount(env: Env, table: string): Promise<number> {
+  const r = await env.DB.prepare(`SELECT COUNT(*) as c FROM ${table}`).first<any>();
+  return Number(r?.c || 0);
+}
+
+async function listRecon(env: Env, limit: number) {
+  const r = await env.DB.prepare(
+    `SELECT id, created_at, type, title, source_url, parse_status, quality_score, quality_notes
+     FROM recon_items ORDER BY created_at DESC LIMIT ?`
+  ).bind(limit).all<any>();
+  return r.results || [];
+}
+
+async function listModules(env: Env, args: {limit: number, tag?: string, season_key?: string}) {
+  const where: string[] = [];
+  const binds: any[] = [];
+  if (args.season_key) {
+    where.push(`season_key = ?`);
+    binds.push(args.season_key);
+  }
+  if (args.tag) {
+    // tags stored as JSON string, quick LIKE is fine for MVP
+    where.push(`tags LIKE ?`);
+    binds.push(`%${args.tag}%`);
+  }
+  const whereSql = where.length ? `WHERE ${where.join(" AND ")}` : "";
+  const sql = `
+    SELECT id, created_at, title, summary, tags, vibe, weather_fit, duration_fit, range_fit,
+           location_hint, lat, lng, confidence, season_key, payload
+    FROM modules
+    ${whereSql}
+    ORDER BY created_at DESC
+    LIMIT ?
+  `;
+  binds.push(args.limit);
+  const r = await env.DB.prepare(sql).bind(...binds).all<any>();
+  return (r.results || []).map(row => ({
+    ...row,
+    tags: safeJson(row.tags, []),
+    weather_fit: safeJson(row.weather_fit, []),
+    duration_fit: safeJson(row.duration_fit, []),
+    range_fit: safeJson(row.range_fit, []),
+    payload: safeJson(row.payload, {}),
+  }));
+}
+
+function safeJson(v: any, fallback: any) {
+  try {
+    if (v == null) return fallback;
+    if (typeof v === "object") return v;
+    return JSON.parse(String(v));
+  } catch {
+    return fallback;
+  }
+}
+
+/** --- Recon ingest flow: store -> fetch/extract -> AI -> create modules --- */
+async function ingestRecon(env: Env, body: any) {
+  const id = uid();
+  const created_at = nowISO();
+  const type = String(body.type || "text");
+  const title = body.title ? String(body.title) : null;
+  const tags = parseTags(body.tags);
+
+  let source_url: string | null = null;
+  let raw_text = "";
+  let raw_meta: any = {};
+
+  if (type === "url") {
+    if (!body.url) throw new Error("Missing url");
+    source_url = String(body.url);
+
+    // Fetch page
+    const res = await fetch(source_url, {
+      headers: { "User-Agent": "QuestConsole/1.0 (+makerapp.cc)" }
+    });
+    const ctype = res.headers.get("content-type") || "";
+    const html = await res.text();
+    raw_meta = { content_type: ctype, fetched_at: created_at, status: res.status };
+
+    raw_text = stripHtml(html);
+  } else {
+    raw_text = String(body.text || "");
+  }
+
+  raw_text = safeTruncate(raw_text, 20000);
+
+  await env.DB.prepare(
+    `INSERT INTO recon_items (id, created_at, type, title, source_url, raw_text, raw_meta, parse_status)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+  ).bind(
+    id, created_at, type, title, source_url, raw_text,
+    JSON.stringify(raw_meta || {}), "parsed"
+  ).run();
+
+  // AI: Extract modules + quality signals
+  const prompt = moduleExtractionPrompt({ type, title: title || undefined, source_url: source_url || undefined, raw_text, tags });
+
+  const content = await chatOR(env, [
+    { role: "system", content: "You output ONLY JSON. No markdown." },
+    { role: "user", content: prompt }
+  ], { temperature: 0.4, max_tokens: 1800 });
+
+  const out = extractJsonStrict(content);
+  const quality_score = Number(out.quality_score ?? 0.5);
+  const quality_notes = String(out.quality_notes ?? "");
+
+  await env.DB.prepare(
+    `UPDATE recon_items SET quality_score=?, quality_notes=? WHERE id=?`
+  ).bind(quality_score, quality_notes, id).run();
+
+  const modules = Array.isArray(out.modules) ? out.modules : [];
+  let created = 0;
+
+  for (const m of modules) {
+    const mid = uid();
+    const mCreated = nowISO();
+
+    const row = {
+      id: mid,
+      created_at: mCreated,
+      title: String(m.title || "Untitled Module"),
+      summary: String(m.summary || ""),
+      tags: JSON.stringify(parseTags(m.tags).concat(tags).slice(0, 20)),
+      vibe: m.vibe ? String(m.vibe) : null,
+      weather_fit: JSON.stringify(parseTags(m.weather_fit).slice(0, 10)),
+      duration_fit: JSON.stringify(parseTags(m.duration_fit).slice(0, 10)),
+      range_fit: JSON.stringify(parseTags(m.range_fit).slice(0, 10)),
+      location_hint: m.location_hint ? String(m.location_hint) : null,
+      lat: (typeof m.lat === "number") ? m.lat : null,
+      lng: (typeof m.lng === "number") ? m.lng : null,
+      confidence: clamp01(Number(m.confidence ?? 0.6)),
+      season_key: m.season_key ? String(m.season_key) : null,
+      payload: JSON.stringify(m.payload || {})
+    };
+
+    await env.DB.prepare(
+      `INSERT INTO modules (id, created_at, title, summary, tags, vibe, weather_fit, duration_fit, range_fit,
+                           location_hint, lat, lng, confidence, season_key, payload)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).bind(
+      row.id, row.created_at, row.title, row.summary, row.tags, row.vibe,
+      row.weather_fit, row.duration_fit, row.range_fit, row.location_hint,
+      row.lat, row.lng, row.confidence, row.season_key, row.payload
+    ).run();
+
+    await env.DB.prepare(
+      `INSERT INTO module_sources (module_id, recon_id, note) VALUES (?, ?, ?)`
+    ).bind(mid, id, "extracted from recon").run();
+
+    created++;
+  }
+
+  return { recon_id: id, quality_score, quality_notes, modules_created: created };
+}
+
+function clamp01(n: number) {
+  if (!isFinite(n)) return 0.6;
+  return Math.max(0, Math.min(1, n));
+}
+
+/** --- Quest generation flow: retrieve modules -> AI -> validate -> return --- */
+async function generateQuest(env: Env, body: any) {
+  const inputs = body.inputs || {};
+  const avoid_titles: string[] = Array.isArray(body.avoid_titles) ? body.avoid_titles.map(String) : [];
+  const season_key: string | null = body.season_key ? String(body.season_key) : null;
+
+  // Pull season (optional)
+  let season: any = null;
+  if (season_key) {
+    season = await env.DB.prepare(`SELECT * FROM seasons WHERE theme_key=?`).bind(season_key).first<any>();
+    if (season) {
+      season.rules = safeJson(season.rules, []);
+    }
+  }
+
+  // Retrieve modules (simple heuristic: season match if provided, else recent)
+  const mods = await listModules(env, { limit: 25, tag: "", season_key: season_key || undefined });
+
+  // If none and no season key, still pull recent modules
+  const pool = mods.length ? mods : await listModules(env, { limit: 25 });
+
+  const prompt = questAuthorPrompt({
+    inputs,
+    avoid_titles,
+    season,
+    modules: pool.map(m => ({
+      id: m.id,
+      title: m.title,
+      summary: m.summary,
+      tags: m.tags,
+      vibe: m.vibe,
+      weather_fit: m.weather_fit,
+      duration_fit: m.duration_fit,
+      range_fit: m.range_fit,
+      location_hint: m.location_hint,
+      confidence: m.confidence,
+      payload: m.payload
+    }))
+  });
+
+  const content = await chatOR(env, [
+    { role: "system", content: "You output ONLY JSON. No markdown. No extra text." },
+    { role: "user", content: prompt }
+  ], { temperature: 0.75, max_tokens: 2200 });
+
+  const q = extractJsonStrict(content);
+
+  // server-side normalize ids/timestamps if missing
+  q.id = q.id || uid();
+  q.created_at = q.created_at || nowISO();
+  q.status = "proposed";
+  q.inputs = q.inputs || inputs;
+
+  // enforce step IDs + xp defaults
+  if (Array.isArray(q.primary)) {
+    q.primary = q.primary.map((t: any, i: number) => ({
+      id: t.id || uid(),
+      text: String(t.text || ""),
+      primary: true,
+      idx: i,
+      done: false,
+      xp: Number(t.xp || 100)
+    }));
+  }
+  if (Array.isArray(q.side)) {
+    q.side = q.side.map((t: any, i: number) => ({
+      id: t.id || uid(),
+      text: String(t.text || ""),
+      primary: false,
+      idx: i,
+      done: false,
+      xp: Number(t.xp || 150)
+    }));
+  }
+  if (Array.isArray(q.artifacts)) {
+    q.artifacts = q.artifacts.map((a: any) => ({
+      id: a.id || uid(),
+      type: String(a.type || "token"),
+      title: String(a.title || "Artifact"),
+      text: String(a.text || ""),
+      status: "unseen",
+      answer: a.answer ?? null,
+      hint: a.hint ?? null,
+      map_query: a.map_query ?? null,
+      poi: a.poi ?? { name: null, lat: null, lng: null }
+    }));
+  } else {
+    q.artifacts = [];
+  }
+
+  q.modules_used = Array.isArray(q.modules_used) ? q.modules_used : [];
+  q.sources = Array.isArray(q.sources) ? q.sources : [];
+  q.safety_notes = Array.isArray(q.safety_notes) ? q.safety_notes : [];
+
+  q.scoring = q.scoring || { accept_xp:50, step_xp:100, side_xp:150, log_xp:75, selfie_xp:200, wonka_xp:150, herring_xp:300, complete_xp:500 };
+  q.progress = q.progress || { current_primary_index:0, xp_this_quest:0, plunder_score:0, memories:[] };
+
+  validateQuest(q);
+  return q;
+}
+
+/** --- Seasons --- */
+async function seasonCreate(env: Env, body: any) {
+  const id = uid();
+  const created_at = nowISO();
+  const title = String(body.title || "");
+  const theme_key = String(body.theme_key || "");
+  const premise = String(body.premise || "");
+  const duration_weeks = Number(body.duration_weeks || 8);
+  const rules = parseTags(body.rules);
+  const finale_spec = String(body.finale_spec || "");
+
+  if (!title || !theme_key || !premise) throw new Error("Missing title/theme_key/premise");
+
+  await env.DB.prepare(
+    `INSERT INTO seasons (id, created_at, title, theme_key, premise, duration_weeks, rules, finale_spec)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+  ).bind(id, created_at, title, theme_key, premise, duration_weeks, JSON.stringify(rules), finale_spec).run();
+
+  return { id, created_at, title, theme_key, premise, duration_weeks, rules, finale_spec };
+}
+
+async function seasonList(env: Env) {
+  const r = await env.DB.prepare(`SELECT * FROM seasons ORDER BY created_at DESC`).all<any>();
+  const items = (r.results || []).map(s => ({
+    ...s,
+    rules: safeJson(s.rules, [])
+  }));
+  return { items, module_count: await dbCount(env, "modules") };
+}
+
+async function seasonPlan(env: Env, body: any) {
+  const theme_key = String(body.theme_key || "");
+  const episodes = Number(body.episodes || 6);
+  if (!theme_key) throw new Error("Missing theme_key");
+
+  const season = await env.DB.prepare(`SELECT * FROM seasons WHERE theme_key=?`).bind(theme_key).first<any>();
+  if (!season) throw new Error("Season not found");
+  season.rules = safeJson(season.rules, []);
+
+  const mods = await listModules(env, { limit: 50, season_key: theme_key });
+  const pool = mods.length ? mods : await listModules(env, { limit: 50 });
+
+  const prompt = seasonPlanPrompt(season, pool.map(m => ({ id: m.id, title: m.title, summary: m.summary, tags: m.tags, confidence: m.confidence })), episodes);
+
+  const content = await chatOR(env, [
+    { role: "system", content: "You output ONLY JSON. No markdown." },
+    { role: "user", content: prompt }
+  ], { temperature: 0.65, max_tokens: 1600 });
+
+  const out = extractJsonStrict(content);
+  const eps = Array.isArray(out.episodes) ? out.episodes : [];
+
+  // Store episode rows
+  // Clear existing for season for simplicity
+  await env.DB.prepare(`DELETE FROM season_episodes WHERE season_id=?`).bind(season.id).run();
+
+  for (let i = 0; i < eps.length; i++) {
+    const e = eps[i];
+    const eid = uid();
+    await env.DB.prepare(
+      `INSERT INTO season_episodes (id, season_id, idx, title, synopsis, preferred_window, module_plan, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+    ).bind(
+      eid,
+      season.id,
+      Number(e.idx || (i + 1)),
+      String(e.title || `Episode ${i + 1}`),
+      String(e.synopsis || ""),
+      e.preferred_window ? JSON.stringify(e.preferred_window) : null,
+      JSON.stringify(e.module_plan || {}),
+      "planned"
+    ).run();
+  }
+
+  return { season_id: season.id, theme_key, episodes: eps };
+}
+
+/** --- Feedback --- */
+async function feedbackAdd(env: Env, body: any) {
+  const id = uid();
+  const created_at = nowISO();
+  const kind = String(body.kind || "module");
+  const target_id = String(body.target_id || "");
+  const rating = (body.rating == null) ? null : Number(body.rating);
+  const note = body.note ? String(body.note) : null;
+  const action = body.action ? String(body.action) : null;
+  if (!target_id) throw new Error("Missing target_id");
+
+  await env.DB.prepare(
+    `INSERT INTO feedback (id, created_at, kind, target_id, rating, note, action)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`
+  ).bind(id, created_at, kind, target_id, rating, note, action).run();
+
+  return { id, created_at, kind, target_id, rating, note, action };
+}
+
+/** --- Router --- */
+export default {
+  async fetch(req: Request, env: Env): Promise<Response> {
+    if (req.method === "OPTIONS") return json({ ok: true });
+
+    const url = new URL(req.url);
+    const path = url.pathname;
+
+    try {
+      if (path === "/api/ping" && req.method === "GET") {
+        return json({ ok: true, version: env.APP_VERSION || "?", model: env.OPENROUTER_MODEL || "?" });
+      }
+
+      if (path === "/api/recon/add" && req.method === "POST") {
+        const body = await readJson(req);
+        const out = await ingestRecon(env, body);
+        return json(out);
+      }
+
+      if (path === "/api/recon/list" && req.method === "GET") {
+        const limit = Math.min(200, Math.max(1, Number(url.searchParams.get("limit") || 50)));
+        const items = await listRecon(env, limit);
+        const module_count = await dbCount(env, "modules");
+        return json({ items, module_count });
+      }
+
+      if (path === "/api/modules/list" && req.method === "GET") {
+        const limit = Math.min(200, Math.max(1, Number(url.searchParams.get("limit") || 60)));
+        const tag = url.searchParams.get("tag") || "";
+        const season_key = url.searchParams.get("season_key") || "";
+        const items = await listModules(env, { limit, tag: tag || undefined, season_key: season_key || undefined });
+        return json({ items });
+      }
+
+      if (path === "/api/quest/generate" && req.method === "POST") {
+        const body = await readJson(req);
+        const out = await generateQuest(env, body);
+        return json(out);
+      }
+
+      if (path === "/api/season/create" && req.method === "POST") {
+        const body = await readJson(req);
+        const out = await seasonCreate(env, body);
+        return json(out);
+      }
+
+      if (path === "/api/season/list" && req.method === "GET") {
+        const out = await seasonList(env);
+        return json(out);
+      }
+
+      if (path === "/api/season/plan" && req.method === "POST") {
+        const body = await readJson(req);
+        const out = await seasonPlan(env, body);
+        return json(out);
+      }
+
+      if (path === "/api/feedback" && req.method === "POST") {
+        const body = await readJson(req);
+        const out = await feedbackAdd(env, body);
+        return json(out);
+      }
+
+      return err(404, "Not found");
+    } catch (e: any) {
+      return err(500, e?.message || "Server error");
+    }
+  }
+};
+
+
+⸻
+
+3) Deploy steps (copy/paste)
+
+A) Create D1 + apply schema
+
+wrangler d1 create quest_console
+# copy database_id into wrangler.toml
+
+wrangler d1 execute quest_console --file=./schema.sql
+
+B) Set secrets
+
+wrangler secret put OPENROUTER_API_KEY
+
+(Optional)
+
+wrangler secret put ALLOWED_ORIGIN
+
+C) Deploy worker
+
+wrangler deploy
+
+D) Wire the front-end
+	•	Put the Worker URL into the HTML:
+
+const API_BASE = "https://YOUR-WORKER.workers.dev";
+
+	•	Upload the HTML to makerapp.cc as an unlisted app.
+
+⸻
+
+4) How you’ll use it (the intended workflow)
+	1.	Spend a week dumping Recon:
+	•	links to parks, weird spots, filming locations, museums
+	•	your kid’s writing snippets
+	•	“we like X vibe” notes
+	2.	The Worker turns Recon → Modules, and flags junk/conflicts with quality notes
+	3.	When you summon a quest:
+	•	Worker selects best modules for your time/weather/vibe/range/location
+	•	AI “authors” a coherent quest episode (lore + real plan)
+	4.	When ready: create a season + generate a 6-episode arc
+
+⸻
+
+5) Next two upgrades you’ll want (I can paste both)
+	1.	Real maps & POIs: integrate a places provider (Google Places / Mapbox / OSM Overpass) so the quest can reliably name nearby real anchors.
+	2.	File uploads to R2: so recon can include images/PDFs/your kid’s stories, and modules can reference them.
+
+If you want, I’ll default to Mapbox Search + Directions (clean API, easy to wire into Worker) and add:
+	•	“near me” coordinates support
+	•	travel time estimates
+	•	park/trail suggestions that are actually local and practical

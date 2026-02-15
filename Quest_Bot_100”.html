@@ -1,0 +1,2045 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Quest Console — Adventure Planner</title>
+  <style>
+    :root{
+      --bg0:#070A12;
+      --bg1:#0B1020;
+      --glass:rgba(255,255,255,.06);
+      --glass2:rgba(255,255,255,.10);
+      --stroke:rgba(255,255,255,.12);
+      --text:#EAF2FF;
+      --muted:rgba(234,242,255,.72);
+      --muted2:rgba(234,242,255,.55);
+      --accent:#74D6FF;
+      --accent2:#B48CFF;
+      --danger:#FF4D6D;
+      --good:#58F29D;
+      --warn:#FFCC66;
+
+      --radius:18px;
+      --radius2:26px;
+      --shadow: 0 24px 64px rgba(0,0,0,.55);
+
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+
+    /* THEMES (skins) */
+    body[data-skin="sci"]{
+      --bg0:#050812; --bg1:#080E1F; --accent:#54F0FF; --accent2:#8A7CFF;
+      --glass:rgba(116,214,255,.06); --glass2:rgba(116,214,255,.10);
+    }
+    body[data-skin="map"]{
+      --bg0:#0b0b0b; --bg1:#121212; --accent:#7AE2C6; --accent2:#E6C87A;
+      --glass:rgba(255,255,255,.05); --glass2:rgba(255,255,255,.08);
+    }
+    body[data-skin="parch"]{
+      --bg0:#251b10; --bg1:#1c140c; --accent:#FFCC66; --accent2:#F29C58;
+      --glass:rgba(255,242,216,.06); --glass2:rgba(255,242,216,.10);
+      --stroke:rgba(255,242,216,.14);
+    }
+    body[data-skin="cozy"]{
+      --bg0:#0b1020; --bg1:#121a2e; --accent:#FF9FD6; --accent2:#88D7FF;
+      --glass:rgba(255,255,255,.06); --glass2:rgba(255,255,255,.10);
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:var(--sans);
+      color:var(--text);
+      background:
+        radial-gradient(1200px 800px at 20% 10%, rgba(180,140,255,.18), transparent 55%),
+        radial-gradient(1200px 800px at 80% 30%, rgba(116,214,255,.18), transparent 55%),
+        linear-gradient(160deg, var(--bg0), var(--bg1));
+      overflow-x:hidden;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .wrap{
+      min-height:100%;
+      padding: max(14px, env(safe-area-inset-top)) 14px max(16px, env(safe-area-inset-bottom));
+      display:flex;
+      justify-content:center;
+      align-items:flex-start;
+    }
+
+    .app{
+      width:min(980px, 100%);
+      display:grid;
+      gap:14px;
+    }
+
+    .topbar{
+      display:flex; gap:10px; align-items:center; justify-content:space-between;
+      padding:12px 14px;
+      background:linear-gradient(180deg, var(--glass2), var(--glass));
+      border:1px solid var(--stroke);
+      border-radius:var(--radius2);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+    .brand{
+      display:flex; flex-direction:column; gap:2px;
+      line-height:1.1;
+    }
+    .brand .t{font-weight:800; letter-spacing:.12em; text-transform:uppercase; font-size:13px}
+    .brand .s{font-family:var(--mono); font-size:12px; color:var(--muted2)}
+    .chips{display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end}
+    .chip{
+      font-family:var(--mono);
+      font-size:11px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid var(--stroke);
+      background:rgba(0,0,0,.18);
+      color:var(--muted);
+      display:flex; gap:8px; align-items:center;
+    }
+    .chip b{color:var(--text); font-weight:700}
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:14px;
+    }
+    @media(min-width: 860px){
+      .grid{grid-template-columns: 1.05fr .95fr}
+    }
+
+    .panel{
+      background:linear-gradient(180deg, var(--glass2), var(--glass));
+      border:1px solid var(--stroke);
+      border-radius:var(--radius2);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      overflow:hidden;
+    }
+    .panel .hd{
+      padding:14px 14px 10px;
+      display:flex; align-items:flex-start; justify-content:space-between; gap:12px;
+      border-bottom:1px solid rgba(255,255,255,.06);
+    }
+    .title{
+      display:flex; flex-direction:column; gap:6px;
+    }
+    .title h2{
+      margin:0;
+      font-size:14px;
+      letter-spacing:.14em;
+      text-transform:uppercase;
+    }
+    .title p{
+      margin:0;
+      font-family:var(--mono);
+      font-size:12px;
+      color:var(--muted2);
+      line-height:1.35;
+    }
+
+    .btnrow{display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end}
+    button{
+      appearance:none; border:0; cursor:pointer;
+      color:var(--text);
+      background:rgba(0,0,0,.24);
+      border:1px solid var(--stroke);
+      padding:10px 12px;
+      border-radius:14px;
+      font-weight:700;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      font-size:11px;
+      transition: transform .08s ease, background .15s ease, border-color .15s ease;
+      user-select:none;
+    }
+    button:hover{transform: translateY(-1px); background:rgba(0,0,0,.30)}
+    button:active{transform: translateY(0px) scale(.99)}
+    button.primary{
+      background:linear-gradient(135deg, rgba(116,214,255,.20), rgba(180,140,255,.20));
+      border-color: rgba(116,214,255,.28);
+    }
+    button.good{
+      background:linear-gradient(135deg, rgba(88,242,157,.18), rgba(116,214,255,.12));
+      border-color: rgba(88,242,157,.28);
+    }
+    button.danger{
+      background:linear-gradient(135deg, rgba(255,77,109,.20), rgba(0,0,0,.15));
+      border-color: rgba(255,77,109,.32);
+    }
+    button.ghost{
+      background:transparent;
+    }
+
+    .body{
+      padding:14px;
+    }
+
+    /* FORMS */
+    .form{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:12px;
+    }
+    .form .full{grid-column:1/-1}
+    label{
+      display:flex; flex-direction:column; gap:6px;
+      font-size:11px; letter-spacing:.12em; text-transform:uppercase;
+      color:var(--muted2);
+    }
+    input, select, textarea{
+      width:100%;
+      font-family:var(--sans);
+      color:var(--text);
+      background:rgba(0,0,0,.20);
+      border:1px solid var(--stroke);
+      border-radius:14px;
+      padding:12px 12px;
+      outline:none;
+    }
+    textarea{min-height:92px; resize:vertical}
+    .hint{font-family:var(--mono); color:var(--muted2); font-size:12px; line-height:1.35}
+
+    /* REVEAL */
+    .reveal{
+      display:none;
+      padding:14px;
+    }
+    .reveal.active{display:block}
+    .zoltar{
+      border:1px dashed rgba(255,255,255,.16);
+      border-radius:var(--radius2);
+      padding:14px;
+      background: radial-gradient(800px 420px at 60% 0%, rgba(116,214,255,.10), transparent 60%),
+                  radial-gradient(900px 420px at 20% 100%, rgba(180,140,255,.10), transparent 60%),
+                  rgba(0,0,0,.20);
+    }
+    .zoltar .big{
+      font-weight:900;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+      font-size:13px;
+      margin:0 0 6px 0;
+    }
+    .zoltar .questTitle{
+      margin:0;
+      font-size:22px;
+      letter-spacing:.02em;
+      line-height:1.1;
+    }
+    .zoltar .hook{
+      margin:8px 0 0 0;
+      color:var(--muted);
+      font-family:var(--mono);
+      font-size:13px;
+      line-height:1.35;
+    }
+    .list{
+      margin-top:12px;
+      display:grid;
+      gap:10px;
+      grid-template-columns: 1fr;
+    }
+    @media(min-width:860px){ .list{grid-template-columns: 1fr 1fr} }
+    .card{
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(0,0,0,.18);
+      border-radius:18px;
+      padding:12px;
+    }
+    .card h4{
+      margin:0 0 8px 0;
+      font-size:12px;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+      color:var(--muted2);
+    }
+    .ol{
+      margin:0;
+      padding-left:18px;
+      color:var(--text);
+      font-family:var(--mono);
+      font-size:13px;
+      line-height:1.5;
+    }
+    .metaRow{
+      margin-top:12px;
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+    }
+    .pill{
+      font-family:var(--mono);
+      font-size:12px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(0,0,0,.18);
+      color:var(--muted);
+    }
+
+    /* CONSOLE */
+    .console{
+      display:none;
+    }
+    .console.active{display:block}
+    .consoleHeader{
+      padding:14px 14px 10px;
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      border-bottom:1px solid rgba(255,255,255,.06);
+    }
+    .qh{
+      display:flex; flex-direction:column; gap:6px;
+      min-width:0;
+    }
+    .qh .qt{
+      font-size:18px;
+      font-weight:900;
+      line-height:1.1;
+      margin:0;
+      letter-spacing:.02em;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+    .qh .qs{
+      font-family:var(--mono);
+      font-size:12px;
+      color:var(--muted2);
+      margin:0;
+      line-height:1.35;
+    }
+
+    .statsStrip{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      min-width:240px;
+      align-items:flex-end;
+    }
+    .statline{
+      font-family:var(--mono);
+      font-size:12px;
+      color:var(--muted2);
+    }
+    .xp{
+      font-family:var(--mono);
+      font-size:12px;
+      color:var(--muted);
+    }
+
+    .bar{
+      width:220px;
+      height:10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(0,0,0,.20);
+      overflow:hidden;
+    }
+    .bar > i{
+      display:block; height:100%;
+      width:0%;
+      background: linear-gradient(90deg, rgba(116,214,255,.95), rgba(180,140,255,.95));
+      box-shadow: 0 0 18px rgba(116,214,255,.35);
+    }
+    .bar.side > i{ background: linear-gradient(90deg, rgba(88,242,157,.9), rgba(116,214,255,.8)); }
+
+    .consoleBody{
+      padding:14px;
+      display:grid;
+      gap:12px;
+    }
+
+    .artifactRow{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:10px;
+      padding:12px;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(0,0,0,.18);
+      border-radius:18px;
+    }
+    .artifactRow .left{
+      display:flex; flex-direction:column; gap:4px;
+    }
+    .artifactRow .left b{
+      font-size:12px; letter-spacing:.12em; text-transform:uppercase;
+      color:var(--muted2);
+    }
+    .artifactRow .left span{
+      font-family:var(--mono); font-size:12px; color:var(--muted);
+      line-height:1.35;
+    }
+
+    .scrollBox{
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(0,0,0,.18);
+      border-radius:18px;
+      padding:12px;
+      max-height: 360px;
+      overflow:auto;
+    }
+    .sect{margin-bottom:12px}
+    .sect h3{
+      margin:0 0 8px 0;
+      font-size:12px;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+      color:var(--muted2);
+    }
+    .task{
+      display:flex; align-items:flex-start; gap:10px;
+      padding:10px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.08);
+      background:rgba(0,0,0,.14);
+      margin-bottom:8px;
+    }
+    .task input[type="checkbox"]{
+      margin-top:2px;
+      width:18px; height:18px;
+      accent-color: var(--accent);
+    }
+    .task .txt{
+      display:flex; flex-direction:column; gap:4px;
+      min-width:0;
+    }
+    .task .txt .line{
+      font-family:var(--mono);
+      font-size:13px;
+      color:var(--text);
+      line-height:1.35;
+      word-wrap:break-word;
+    }
+    .task .txt .sub{
+      font-family:var(--mono);
+      font-size:12px;
+      color:var(--muted2);
+      display:flex; gap:8px; flex-wrap:wrap;
+      align-items:center;
+    }
+    .badge{
+      font-family:var(--mono);
+      font-size:11px;
+      padding:2px 8px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(0,0,0,.16);
+      color:var(--muted);
+    }
+    .badge.good{border-color: rgba(88,242,157,.22); color: rgba(88,242,157,.95)}
+    .badge.warn{border-color: rgba(255,204,102,.24); color: rgba(255,204,102,.95)}
+
+    .bottomNav{
+      display:grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap:10px;
+      padding:14px;
+      border-top:1px solid rgba(255,255,255,.06);
+      background:rgba(0,0,0,.10);
+    }
+    .bottomNav button{width:100%; padding:12px 10px}
+
+    /* MODAL */
+    .modalBack{
+      position:fixed; inset:0;
+      background: rgba(0,0,0,.62);
+      display:none;
+      align-items:flex-end;
+      justify-content:center;
+      padding: 14px 14px max(14px, env(safe-area-inset-bottom));
+      z-index:50;
+    }
+    .modalBack.active{display:flex}
+    .modal{
+      width:min(900px, 100%);
+      border-radius:24px;
+      border:1px solid rgba(255,255,255,.14);
+      background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.06));
+      backdrop-filter: blur(14px);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      max-height: 88vh;
+      display:flex;
+      flex-direction:column;
+    }
+    .modal .mh{
+      padding:12px 14px;
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+    }
+    .modal .mh .t{
+      font-weight:900;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+      font-size:12px;
+    }
+    .modal .mc{
+      padding:14px;
+      overflow:auto;
+      display:grid;
+      gap:12px;
+    }
+    .artifactCard{
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:18px;
+      background:rgba(0,0,0,.18);
+      padding:12px;
+    }
+    .artifactCard h4{
+      margin:0 0 8px 0;
+      font-size:12px;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+      color:var(--muted2);
+    }
+    .artifactCard p{
+      margin:0;
+      font-family:var(--mono);
+      font-size:13px;
+      line-height:1.5;
+      color:var(--text);
+    }
+    .artifactCard img{
+      width:100%;
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,.10);
+      display:block;
+      margin-top:10px;
+      background:rgba(0,0,0,.22);
+    }
+    .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+
+    /* PACKS */
+    .packs{
+      display:none;
+    }
+    .packs.active{display:block}
+    .packList{
+      display:grid; gap:10px;
+    }
+    .packItem{
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(0,0,0,.18);
+      border-radius:18px;
+      padding:12px;
+      display:flex;
+      gap:12px;
+      align-items:flex-start;
+      justify-content:space-between;
+    }
+    .packItem .left{
+      display:flex; flex-direction:column; gap:6px;
+      min-width:0;
+    }
+    .packItem .left b{
+      font-size:12px;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+      color:var(--muted2);
+    }
+    .packItem .left .name{
+      font-weight:900;
+      font-size:16px;
+      line-height:1.2;
+      margin:0;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+    .packItem .left .meta{
+      font-family:var(--mono);
+      font-size:12px;
+      color:var(--muted2);
+    }
+    .packItem .right{display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end}
+
+    /* TOAST */
+    .toast{
+      position:fixed;
+      left:50%;
+      bottom: max(14px, env(safe-area-inset-bottom));
+      transform: translateX(-50%);
+      padding:10px 12px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(0,0,0,.55);
+      color:var(--text);
+      font-family:var(--mono);
+      font-size:12px;
+      display:none;
+      z-index:60;
+      box-shadow: 0 18px 48px rgba(0,0,0,.45);
+    }
+    .toast.show{display:block}
+
+    /* Small util */
+    .muted{color:var(--muted2)}
+    .sep{height:1px;background:rgba(255,255,255,.08); margin:12px 0}
+    .rightText{text-align:right}
+  </style>
+</head>
+<body data-skin="sci">
+  <div class="wrap">
+    <div class="app" id="app">
+
+      <div class="topbar">
+        <div class="brand">
+          <div class="t">Quest Console</div>
+          <div class="s" id="subline">makerapp.cc / webapp ready</div>
+        </div>
+
+        <div class="chips">
+          <div class="chip">SKIN: <b id="skinName">SCI</b></div>
+          <div class="chip">XP: <b id="xpChip">0</b></div>
+          <div class="chip">LEVEL: <b id="lvlChip">1</b></div>
+        </div>
+      </div>
+
+      <div class="grid">
+        <!-- LEFT: REQUEST / REVEAL -->
+        <section class="panel" id="requestPanel">
+          <div class="hd">
+            <div class="title">
+              <h2>Quest Request</h2>
+              <p>Feed the oracle your time + vibe. It reveals a quest. PASS to re-roll. ACCEPT to begin.</p>
+            </div>
+            <div class="btnrow">
+              <button class="ghost" id="btnReset">Reset</button>
+              <button class="ghost" id="btnSkin">Skin</button>
+            </div>
+          </div>
+
+          <div class="body" id="requestBody">
+            <div class="form" id="questForm">
+              <label>
+                Time Available
+                <select id="fTime">
+                  <option value="30m">30 minutes</option>
+                  <option value="60m" selected>60 minutes</option>
+                  <option value="2h">2 hours</option>
+                  <option value="halfday">Half-day</option>
+                </select>
+              </label>
+
+              <label>
+                Weather
+                <select id="fWeather">
+                  <option value="auto" selected>Auto / vibes-only</option>
+                  <option value="sunny">Sunny</option>
+                  <option value="rainy">Rainy</option>
+                  <option value="cold">Cold</option>
+                  <option value="hot">Hot</option>
+                  <option value="windy">Windy</option>
+                </select>
+              </label>
+
+              <label>
+                Vibe
+                <select id="fVibe">
+                  <option value="curious" selected>Curious</option>
+                  <option value="chill">Chill</option>
+                  <option value="active">Active</option>
+                  <option value="cozy">Cozy</option>
+                  <option value="mystery">Mystery</option>
+                  <option value="kid-picks">Kid picks</option>
+                </select>
+              </label>
+
+              <label>
+                Range
+                <select id="fRange">
+                  <option value="walk">Walking</option>
+                  <option value="short-drive" selected>Short drive</option>
+                  <option value="long-drive">Longer drive</option>
+                </select>
+              </label>
+
+              <label class="full">
+                Where are we?
+                <input id="fWhere" placeholder="Near me (GPS) or type a place..." />
+              </label>
+
+              <label class="full">
+                Constraints (optional)
+                <input id="fConstraints" placeholder="Budget, indoor only, stroller-friendly, no crowds, etc." />
+              </label>
+
+              <label class="full">
+                Party names (optional)
+                <input id="fParty" placeholder="Chance + Kiddo (or whatever you want)" />
+              </label>
+
+              <div class="full hint">
+                Tip: In Telegram WebApp, your header can be hidden — this UI still works. Later you can wire AI to your local agent / cloud key.
+              </div>
+
+              <div class="full btnrow">
+                <button class="primary" id="btnSummon">Summon Quest</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="reveal" id="revealBox">
+            <div class="zoltar">
+              <p class="big">The Oracle Reveals...</p>
+              <h3 class="questTitle" id="rTitle">—</h3>
+              <p class="hook" id="rHook">—</p>
+
+              <div class="metaRow" id="rMeta"></div>
+
+              <div class="list">
+                <div class="card">
+                  <h4>Primary Objectives</h4>
+                  <ol class="ol" id="rPrimary"></ol>
+                </div>
+                <div class="card">
+                  <h4>Side Quests</h4>
+                  <ol class="ol" id="rSide"></ol>
+                </div>
+              </div>
+
+              <div class="sep"></div>
+
+              <div class="row" style="justify-content:space-between">
+                <div class="hint" id="rArtifactsHint">Artifacts detected: —</div>
+                <div class="btnrow">
+                  <button id="btnPass">Pass</button>
+                  <button class="good" id="btnAccept">Accept</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- RIGHT: CONSOLE / PACKS -->
+        <section class="panel" id="rightPanel">
+          <!-- CONSOLE -->
+          <div class="console" id="consoleBox">
+            <div class="consoleHeader">
+              <div class="qh">
+                <p class="qs" id="cLine1">ACTIVE QUEST</p>
+                <h3 class="qt" id="cTitle">—</h3>
+                <p class="qs" id="cLine2">—</p>
+              </div>
+
+              <div class="statsStrip">
+                <div class="statline" id="cScoreLine">PLUNDER SCORE: 0</div>
+                <div class="xp" id="cXpLine">XP this quest: 0</div>
+                <div class="bar"><i id="cProgBar"></i></div>
+                <div class="bar side"><i id="cSideBar"></i></div>
+              </div>
+            </div>
+
+            <div class="consoleBody">
+              <div class="artifactRow">
+                <div class="left">
+                  <b>Artifacts</b>
+                  <span id="cArtifactsSub">Tap to open the artifact vault: maps, riddles, clues... maybe a red herring.</span>
+                </div>
+                <div class="btnrow">
+                  <button class="primary" id="btnArtifacts">Open Vault</button>
+                </div>
+              </div>
+
+              <div class="scrollBox">
+                <div class="sect">
+                  <h3>Primary Steps</h3>
+                  <div id="cPrimaryList"></div>
+                </div>
+
+                <div class="sect">
+                  <h3>Side Quests</h3>
+                  <div id="cSideList"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="bottomNav">
+              <button class="primary" id="btnNext">TREK / NEXT</button>
+              <button id="btnLog">LOG</button>
+              <button id="btnMap">MAP</button>
+              <button class="danger" id="btnExit">EXIT</button>
+            </div>
+          </div>
+
+          <!-- PACKS -->
+          <div class="packs active" id="packsBox">
+            <div class="hd">
+              <div class="title">
+                <h2>Adventure Packs</h2>
+                <p>Completed quests become packs. View / export JSON. (Media export can come next.)</p>
+              </div>
+              <div class="btnrow">
+                <button class="ghost" id="btnBackToRequest">New Quest</button>
+              </div>
+            </div>
+            <div class="body">
+              <div class="packList" id="packList"></div>
+              <div class="sep"></div>
+              <div class="hint">
+                MVP stores everything in localStorage (+ media blobs in IndexedDB).
+                Next step: add “cinema playback” and a Year-in-Review pack builder.
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL -->
+  <div class="modalBack" id="modalBack" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true">
+      <div class="mh">
+        <div class="t" id="modalTitle">Artifact Vault</div>
+        <div class="btnrow">
+          <button class="ghost" id="btnModalClose">Close</button>
+        </div>
+      </div>
+      <div class="mc" id="modalContent"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">—</div>
+
+<script>
+/* ===========================
+   Quest Console MVP (single file)
+   - Runs in MakerApp.cc or Telegram WebApp
+   - LocalStorage for data + IndexedDB for media blobs
+   - AI stub generator (rule-based) + optional API hook
+=========================== */
+
+const APP_KEY = "quest_console_v1";
+const DB_NAME = "quest_console_media_v1";
+const DB_STORE = "blobs";
+
+const SKINS = ["sci","parch","cozy","map"];
+const SKIN_LABEL = {sci:"SCI", parch:"PARCH", cozy:"COZY", map:"MAP"};
+
+const $ = (id)=>document.getElementById(id);
+const nowISO = ()=> new Date().toISOString();
+const fmtDT = (d)=> new Date(d).toLocaleString(undefined,{weekday:"short",month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});
+const uid = ()=> (crypto?.randomUUID?.() || ("id_"+Math.random().toString(16).slice(2)+"_"+Date.now()));
+
+function toast(msg){
+  const el = $("toast");
+  el.textContent = msg;
+  el.classList.add("show");
+  clearTimeout(toast._t);
+  toast._t = setTimeout(()=>el.classList.remove("show"), 1600);
+}
+
+function clamp(n,a,b){return Math.max(a,Math.min(b,n));}
+
+/* ---------- Telegram WebApp (optional) ---------- */
+function initTelegram(){
+  const tg = window.Telegram?.WebApp;
+  if(!tg) return;
+  try{
+    tg.ready();
+    // Let Telegram control colors if desired (MVP keeps our skin)
+    // tg.expand();
+    $("subline").textContent = `Telegram WebApp • ${tg.platform || "web"}`;
+  }catch(e){}
+}
+
+/* ---------- Storage ---------- */
+function loadState(){
+  try{
+    const raw = localStorage.getItem(APP_KEY);
+    if(!raw) return defaultState();
+    const s = JSON.parse(raw);
+    return {...defaultState(), ...s};
+  }catch{
+    return defaultState();
+  }
+}
+function saveState(){
+  localStorage.setItem(APP_KEY, JSON.stringify(state));
+  updateTopChips();
+}
+function defaultState(){
+  return {
+    skin:"sci",
+    xp_total: 0,
+    level: 1,
+    packs: [],        // completed packs
+    activeQuest: null // quest object while running
+  };
+}
+let state = loadState();
+
+/* ---------- XP / Leveling ---------- */
+function xpToLevel(xp){
+  // simple curve: lvl increases every 1000 xp, with mild ramp
+  // (you can replace later)
+  return 1 + Math.floor(xp / 1000);
+}
+function addXP(amount, reason=""){
+  state.xp_total += amount;
+  state.level = xpToLevel(state.xp_total);
+  saveState();
+  if(reason) toast(`+${amount} XP • ${reason}`);
+  else toast(`+${amount} XP`);
+}
+
+/* ---------- IndexedDB for media blobs ---------- */
+function openDB(){
+  return new Promise((resolve,reject)=>{
+    const req = indexedDB.open(DB_NAME, 1);
+    req.onupgradeneeded = ()=>{
+      const db = req.result;
+      if(!db.objectStoreNames.contains(DB_STORE)){
+        db.createObjectStore(DB_STORE, {keyPath:"id"});
+      }
+    };
+    req.onsuccess = ()=>resolve(req.result);
+    req.onerror = ()=>reject(req.error);
+  });
+}
+async function putBlob(file){
+  const db = await openDB();
+  const id = uid();
+  const rec = {id, type:file.type, name:file.name, size:file.size, created_at: nowISO(), blob:file};
+  return new Promise((resolve,reject)=>{
+    const tx = db.transaction(DB_STORE, "readwrite");
+    tx.objectStore(DB_STORE).put(rec);
+    tx.oncomplete = ()=>resolve(rec);
+    tx.onerror = ()=>reject(tx.error);
+  });
+}
+async function getBlob(id){
+  const db = await openDB();
+  return new Promise((resolve,reject)=>{
+    const tx = db.transaction(DB_STORE, "readonly");
+    const req = tx.objectStore(DB_STORE).get(id);
+    req.onsuccess = ()=>resolve(req.result || null);
+    req.onerror = ()=>reject(req.error);
+  });
+}
+
+/* ---------- Known Interests Library (starter; you can extend) ---------- */
+const INTERESTS = [
+  {theme:"Hidden Treat Trail", tags:["snack","walk"], hooks:[
+    "Sugar-scented winds hint at a secret stop...",
+    "A treat awaits — but only the keen-eyed can find it."
+  ], prim:[
+    "Navigate toward a promising spot.",
+    "Solve the small puzzle to unlock the next clue.",
+    "Retrieve the ‘relic’ (a photo, a token, or a tiny purchase)."
+  ], side:[
+    "Take a selfie at the weirdest sign you can find.",
+    "Spot something shaped like a heart.",
+    "Ask: ‘What’s one fun fact about this area?’ (optional)"
+  ], artifacts:[
+    {type:"riddle", title:"Gate Riddle", text:"I have streets but no cars, I have rivers but no water. What am I?", answer:"map", hint:"You’re looking at one right now."},
+    {type:"map", title:"Route Fragment", text:"A small map fragment appears... (add your own image later)"},
+    {type:"herring", title:"Red Herring", text:"The shiny statue is watching... but it’s not your quest target."}
+  ]},
+  {theme:"Mural Oracle Run", tags:["art","discover"], hooks:[
+    "Walls can speak. Find the one that sings today.",
+    "A painted secret is waiting to be noticed."
+  ], prim:[
+    "Find a mural, street art, or interesting sign.",
+    "Capture a photo and name the ‘guardian’ of the mural.",
+    "Leave a tiny compliment note in your journal (no vandalism)."
+  ], side:[
+    "Find 3 colors you love and call them spell names.",
+    "Collect a ‘texture sample’ photo (brick, bark, tile).",
+    "Spot an animal (real or drawn)."
+  ], artifacts:[
+    {type:"image", title:"Clue Sketch", text:"Look for bold shapes + big outlines. Your target ‘feels’ loud."},
+    {type:"riddle", title:"Color Lock", text:"I am the color of the sky’s mirror. What color am I?", answer:"blue", hint:"Look up, then look down."}
+  ]},
+  {theme:"Forest Shrine Circuit", tags:["nature","walk"], hooks:[
+    "The grove remembers. It wants a visitor.",
+    "A tiny shrine hides in plain sight."
+  ], prim:[
+    "Walk to a green place (park, trail, grove).",
+    "Find an ‘Elder Tree’ and take a respectful photo.",
+    "Return to base and declare today’s ‘forest rule’."
+  ], side:[
+    "Gather 3 ‘moon shards’ (smooth stones or leaf shapes).",
+    "Listen for a bird call and mimic it (quietly).",
+    "Find something older than 50 years (tree, building, plaque)."
+  ], artifacts:[
+    {type:"map", title:"Old Map", text:"The old map shows a grove... (later: real map image)"},
+    {type:"token", title:"Golden Acorn Token", text:"Awarded when you find a tree with ‘character’."}
+  ]},
+  {theme:"Sector Data Heist", tags:["sci","mission"], hooks:[
+    "A signal spikes. The sector is unstable.",
+    "Move quiet. The console wants data."
+  ], prim:[
+    "Locate a ‘terminal’ (a landmark / store / sign).",
+    "Extract encrypted files (take 3 photos with secret captions).",
+    "Escape the sector (return to car / home base)."
+  ], side:[
+    "Evade the drones (walk a different route back).",
+    "Transmit a data packet (send a funny voice note).",
+    "Spot a ‘glitch’ (odd sign, weird object, strange pattern)."
+  ], artifacts:[
+    {type:"riddle", title:"Cipher Prompt", text:"What has a key but can’t open locks?", answer:"keyboard", hint:"It types."},
+    {type:"herring", title:"False Terminal", text:"That flashy billboard is a decoy terminal."}
+  ]}
+];
+
+/* ---------- Quest Generator (rule-based MVP) ---------- */
+function choose(arr){ return arr[Math.floor(Math.random()*arr.length)] }
+function avoidRepeats(theme, avoidThemes){
+  if(!avoidThemes?.length) return theme;
+  return !avoidThemes.includes(theme);
+}
+function generateQuestFromInputs(inputs, avoid={}){
+  const avoidThemes = avoid.avoidThemes || [];
+  // pick a base interest not in avoidThemes
+  let pool = INTERESTS.filter(x=>avoidRepeats(x.theme, avoidThemes));
+  if(pool.length===0) pool = INTERESTS.slice();
+  const base = choose(pool);
+
+  const questId = uid();
+  const startedAt = nowISO();
+  const title = base.theme + (inputs.vibe==="mystery" ? " — Mystery Variant" : "");
+  const hook = choose(base.hooks);
+
+  // adapt steps count by time
+  const time = inputs.time;
+  let primCount = (time==="30m")?3 : (time==="60m")?3 : (time==="2h")?4 : 5;
+  let sideCount = (time==="30m")?2 : (time==="60m")?3 : 4;
+
+  const primary = base.prim.slice(0, primCount).map((t,i)=>mkTask(t, true, i));
+  const side = base.side.slice(0, sideCount).map((t,i)=>mkTask(t, false, i));
+
+  // artifacts: 1–3 based on vibe
+  let artCount = (inputs.vibe==="mystery") ? 3 : 2;
+  const artifacts = shuffle(base.artifacts).slice(0, artCount).map(a=>({id:uid(), status:"unseen", ...a}));
+
+  return {
+    id: questId,
+    created_at: startedAt,
+    started_at: null,
+    ended_at: null,
+    status: "proposed",
+    inputs,
+    title,
+    hook,
+    est_duration: time,
+    primary,
+    side,
+    artifacts,
+    scoring: {
+      accept_xp: 50,
+      step_xp: 100,
+      side_xp: 150,
+      log_xp: 75,
+      selfie_xp: 200,
+      wonka_xp: 150,
+      herring_xp: 300,
+      complete_xp: 500
+    },
+    progress: {
+      current_primary_index: 0,
+      xp_this_quest: 0,
+      plunder_score: 0,
+      memories: [] // memory entries for this quest
+    }
+  };
+}
+function mkTask(text, primary, i){
+  // basic reward hints
+  const xp = primary ? 100 : 150;
+  return {
+    id: uid(),
+    text,
+    primary,
+    idx: i,
+    done: false,
+    xp
+  };
+}
+function shuffle(a){
+  const b=a.slice();
+  for(let i=b.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [b[i],b[j]]=[b[j],b[i]];
+  }
+  return b;
+}
+
+/* ---------- OPTIONAL: AI hook (stubbed) ----------
+   You can wire this to:
+   - your local agent endpoint
+   - OpenAI/OpenRouter/Perplexity/etc
+   Requirement: return the same JSON shape as generateQuestFromInputs().
+--------------------------------------------------- */
+async function maybeGenerateQuestAI(inputs, avoid){
+  // MVP: rule-based only. To enable AI:
+  // 1) create an endpoint that returns quest JSON.
+  // 2) set AI_ENDPOINT below.
+  const AI_ENDPOINT = ""; // e.g. "https://your-worker.yourdomain/api/quest"
+  if(!AI_ENDPOINT) return null;
+
+  const payload = {inputs, avoid, interests: INTERESTS.map(x=>({theme:x.theme,tags:x.tags}))};
+  const res = await fetch(AI_ENDPOINT, {
+    method:"POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify(payload)
+  });
+  if(!res.ok) throw new Error("AI endpoint failed");
+  return await res.json();
+}
+
+/* ---------- UI State ---------- */
+let proposedQuest = null;
+
+function setSkin(next){
+  state.skin = next;
+  document.body.setAttribute("data-skin", next);
+  $("skinName").textContent = SKIN_LABEL[next] || next.toUpperCase();
+  saveState();
+}
+function cycleSkin(){
+  const i = SKINS.indexOf(state.skin);
+  const next = SKINS[(i+1)%SKINS.length];
+  setSkin(next);
+  toast(`Skin: ${SKIN_LABEL[next]}`);
+}
+
+/* ---------- Render: top chips ---------- */
+function updateTopChips(){
+  $("xpChip").textContent = state.xp_total;
+  $("lvlChip").textContent = state.level;
+}
+
+/* ---------- Screen switches ---------- */
+function showReveal(show){
+  $("questForm").style.display = show ? "none" : "grid";
+  $("revealBox").classList.toggle("active", !!show);
+}
+function showConsole(show){
+  $("consoleBox").classList.toggle("active", !!show);
+  $("packsBox").classList.toggle("active", !show);
+}
+
+/* ---------- Render reveal ---------- */
+function renderReveal(q){
+  $("rTitle").textContent = q.title;
+  $("rHook").textContent = q.hook;
+
+  const meta = $("rMeta");
+  meta.innerHTML = "";
+  meta.appendChild(pill(`TIME: ${q.inputs.time}`));
+  meta.appendChild(pill(`WEATHER: ${q.inputs.weather}`));
+  meta.appendChild(pill(`VIBE: ${q.inputs.vibe}`));
+  meta.appendChild(pill(`RANGE: ${q.inputs.range}`));
+  if(q.inputs.where) meta.appendChild(pill(`WHERE: ${q.inputs.where}`));
+
+  $("rPrimary").innerHTML = q.primary.map(t=>`<li>${escapeHtml(t.text)}</li>`).join("");
+  $("rSide").innerHTML = q.side.map(t=>`<li>${escapeHtml(t.text)}</li>`).join("");
+  $("rArtifactsHint").textContent = `Artifacts detected: ${q.artifacts.length}`;
+}
+
+/* ---------- Render console ---------- */
+function renderConsole(q){
+  // header
+  $("cTitle").textContent = q.title;
+  const party = q.inputs.party?.trim() ? q.inputs.party.trim() : "You + Kid";
+  const startLine = q.started_at ? fmtDT(q.started_at) : "—";
+  $("cLine1").textContent = `ACTIVE QUEST • ${party}`;
+  $("cLine2").textContent = `Started: ${startLine} • Weather: ${q.inputs.weather} • Vibe: ${q.inputs.vibe}`;
+
+  // stats
+  $("cScoreLine").textContent = `PLUNDER SCORE: ${q.progress.plunder_score}`;
+  $("cXpLine").textContent = `XP this quest: ${q.progress.xp_this_quest}`;
+
+  // progress bars
+  const primDone = q.primary.filter(t=>t.done).length;
+  const primTotal = q.primary.length;
+  const sideDone = q.side.filter(t=>t.done).length;
+  const sideTotal = q.side.length;
+
+  const primPct = primTotal ? Math.round((primDone/primTotal)*100) : 0;
+  const sidePct = sideTotal ? Math.round((sideDone/sideTotal)*100) : 0;
+
+  $("cProgBar").style.width = primPct + "%";
+  $("cSideBar").style.width = sidePct + "%";
+
+  // artifacts subline
+  const unseen = q.artifacts.filter(a=>a.status==="unseen").length;
+  $("cArtifactsSub").textContent = unseen
+    ? `${unseen} unseen artifact(s) in the vault.`
+    : `All artifacts have been seen.`;
+
+  // lists
+  $("cPrimaryList").innerHTML = "";
+  $("cSideList").innerHTML = "";
+
+  q.primary.forEach(t=> $("cPrimaryList").appendChild(taskRow(t, q)));
+  q.side.forEach(t=> $("cSideList").appendChild(taskRow(t, q)));
+}
+
+/* ---------- Task row ---------- */
+function taskRow(t, q){
+  const wrap = document.createElement("div");
+  wrap.className = "task";
+
+  const cb = document.createElement("input");
+  cb.type = "checkbox";
+  cb.checked = !!t.done;
+  cb.addEventListener("change", ()=>{
+    t.done = cb.checked;
+
+    if(t.done){
+      awardForTask(t, q);
+    }else{
+      // undo: keep simple (no XP rollback)
+      toast("Unchecked (no XP rollback).");
+    }
+    persistActiveQuest();
+    renderConsole(q);
+  });
+
+  const txt = document.createElement("div");
+  txt.className = "txt";
+
+  const line = document.createElement("div");
+  line.className = "line";
+  line.textContent = t.text;
+
+  const sub = document.createElement("div");
+  sub.className = "sub";
+  const xpBadge = document.createElement("span");
+  xpBadge.className = "badge " + (t.primary ? "warn" : "good");
+  xpBadge.textContent = `+${t.xp} XP`;
+  sub.appendChild(xpBadge);
+
+  // Quick log button
+  const logBtn = document.createElement("button");
+  logBtn.className = "ghost";
+  logBtn.style.padding = "8px 10px";
+  logBtn.style.borderRadius = "12px";
+  logBtn.textContent = "LOG MOMENT";
+  logBtn.addEventListener("click", ()=>openLogModal(q, {tag:"step", stepId:t.id}));
+  sub.appendChild(logBtn);
+
+  txt.appendChild(line);
+  txt.appendChild(sub);
+
+  wrap.appendChild(cb);
+  wrap.appendChild(txt);
+  return wrap;
+}
+
+function awardForTask(t, q){
+  const xp = t.xp;
+  q.progress.xp_this_quest += xp;
+  q.progress.plunder_score += (t.primary ? 250 : 350);
+  addXP(xp, t.primary ? "Primary step" : "Side quest");
+}
+
+/* ---------- Artifacts modal ---------- */
+function openArtifacts(q){
+  $("modalTitle").textContent = "Artifact Vault";
+  const mc = $("modalContent");
+  mc.innerHTML = "";
+
+  q.artifacts.forEach(a=>{
+    const c = document.createElement("div");
+    c.className = "artifactCard";
+
+    const h = document.createElement("h4");
+    h.textContent = `${a.type.toUpperCase()} • ${a.title || "Artifact"}`;
+    c.appendChild(h);
+
+    const p = document.createElement("p");
+    p.textContent = a.text || "";
+    c.appendChild(p);
+
+    if(a.type==="riddle"){
+      const row = document.createElement("div");
+      row.className = "row";
+      row.style.marginTop = "10px";
+
+      const ans = document.createElement("input");
+      ans.placeholder = "Answer...";
+      ans.style.flex = "1";
+
+      const check = document.createElement("button");
+      check.className = "primary";
+      check.textContent = "CHECK";
+      check.addEventListener("click", ()=>{
+        const guess = (ans.value||"").trim().toLowerCase();
+        const ok = guess && guess === (a.answer||"").trim().toLowerCase();
+        if(ok){
+          toast("Riddle solved!");
+          a.status = "completed";
+          q.progress.plunder_score += 500;
+          addXP(200, "Riddle solved");
+          persistActiveQuest(); renderConsole(q);
+        }else{
+          toast("Not quite...");
+        }
+      });
+
+      const hint = document.createElement("button");
+      hint.textContent = "HINT (-50 XP)";
+      hint.addEventListener("click", ()=>{
+        if(q.progress.xp_this_quest < 50){
+          toast("Need more quest XP to buy a hint.");
+          return;
+        }
+        q.progress.xp_this_quest = Math.max(0, q.progress.xp_this_quest - 50);
+        q.progress.plunder_score = Math.max(0, q.progress.plunder_score - 50);
+        toast(a.hint ? `Hint: ${a.hint}` : "No hint stored.");
+        persistActiveQuest(); renderConsole(q);
+      });
+
+      row.appendChild(ans);
+      row.appendChild(check);
+      row.appendChild(hint);
+      c.appendChild(row);
+    }
+
+    if(a.type==="map"){
+      // Placeholder image (you can replace with your own image or captured map screenshot)
+      const img = document.createElement("img");
+      img.alt = "Map artifact";
+      img.src = a.image_data_url || makePlaceholderMapDataURL();
+      c.appendChild(img);
+
+      const row = document.createElement("div");
+      row.className = "row";
+      row.style.marginTop = "10px";
+
+      const nav = document.createElement("button");
+      nav.className = "good";
+      nav.textContent = "NAVIGATE";
+      nav.addEventListener("click", ()=>{
+        // If you later store lat/lng, open google maps
+        const qstr = encodeURIComponent(q.inputs.where || "near me");
+        window.open(`https://www.google.com/maps/search/?api=1&query=${qstr}`, "_blank");
+      });
+
+      const mark = document.createElement("button");
+      mark.textContent = "MARK SEEN";
+      mark.addEventListener("click", ()=>{
+        a.status = "seen";
+        toast("Map marked seen.");
+        persistActiveQuest(); renderConsole(q);
+      });
+
+      row.appendChild(nav);
+      row.appendChild(mark);
+      c.appendChild(row);
+    }
+
+    if(a.type==="image"){
+      // Placeholder for clue image
+      const img = document.createElement("img");
+      img.alt = "Clue image";
+      img.src = a.image_data_url || makePlaceholderClueDataURL();
+      c.appendChild(img);
+
+      const row = document.createElement("div");
+      row.className = "row";
+      row.style.marginTop = "10px";
+
+      const seen = document.createElement("button");
+      seen.textContent = "MARK SEEN";
+      seen.addEventListener("click", ()=>{
+        a.status = "seen";
+        toast("Clue marked seen.");
+        persistActiveQuest(); renderConsole(q);
+      });
+
+      row.appendChild(seen);
+      c.appendChild(row);
+    }
+
+    if(a.type==="herring"){
+      const row = document.createElement("div");
+      row.className = "row";
+      row.style.marginTop = "10px";
+
+      const spotted = document.createElement("button");
+      spotted.className = "primary";
+      spotted.textContent = "FLAG RED HERRING";
+      spotted.addEventListener("click", ()=>{
+        if(a.status==="completed"){ toast("Already flagged."); return; }
+        a.status = "completed";
+        q.progress.plunder_score += 600;
+        addXP(q.scoring.herring_xp, "Red herring spotted");
+        persistActiveQuest(); renderConsole(q);
+      });
+
+      row.appendChild(spotted);
+      c.appendChild(row);
+    }
+
+    if(a.type==="token"){
+      const row = document.createElement("div");
+      row.className = "row";
+      row.style.marginTop = "10px";
+
+      const claim = document.createElement("button");
+      claim.className = "good";
+      claim.textContent = "CLAIM TOKEN";
+      claim.addEventListener("click", ()=>{
+        if(a.status==="completed"){ toast("Token already claimed."); return; }
+        a.status = "completed";
+        q.progress.plunder_score += 400;
+        addXP(150, "Token claimed");
+        persistActiveQuest(); renderConsole(q);
+      });
+
+      row.appendChild(claim);
+      c.appendChild(row);
+    }
+
+    // default: mark seen
+    if(a.status==="unseen"){
+      a.status="seen";
+    }
+
+    mc.appendChild(c);
+  });
+
+  openModal();
+}
+
+function openModal(){
+  $("modalBack").classList.add("active");
+  $("modalBack").setAttribute("aria-hidden","false");
+}
+function closeModal(){
+  $("modalBack").classList.remove("active");
+  $("modalBack").setAttribute("aria-hidden","true");
+}
+
+/* ---------- Log modal (fast) ---------- */
+function openLogModal(q, opts={}){
+  $("modalTitle").textContent = "Log a Memory";
+  const mc = $("modalContent");
+  mc.innerHTML = "";
+
+  const c = document.createElement("div");
+  c.className = "artifactCard";
+
+  const h = document.createElement("h4");
+  h.textContent = "10-second capture";
+  c.appendChild(h);
+
+  const p = document.createElement("p");
+  p.textContent = "Pick one: photo, voice, quote, or quick tag. (Everything becomes part of the Adventure Pack.)";
+  c.appendChild(p);
+
+  const row1 = document.createElement("div");
+  row1.className = "row";
+  row1.style.marginTop = "10px";
+
+  // photo
+  const photo = document.createElement("button");
+  photo.className = "primary";
+  photo.textContent = "PHOTO";
+  photo.addEventListener("click", async ()=>{
+    const file = await pickFile("image/*", true);
+    if(!file) return;
+    const rec = await putBlob(file);
+    const entry = {id:uid(), t:nowISO(), kind:"photo", blob_id:rec.id, mime:rec.type, note:"", tags:[opts.tag||"memory"]};
+    q.progress.memories.push(entry);
+    q.progress.plunder_score += 120;
+    q.progress.xp_this_quest += q.scoring.log_xp;
+    addXP(q.scoring.log_xp, "Memory logged");
+    persistActiveQuest();
+    toast("Photo logged.");
+    closeModal();
+    renderConsole(q);
+  });
+
+  // voice
+  const voice = document.createElement("button");
+  voice.textContent = "VOICE (FILE)";
+  voice.addEventListener("click", async ()=>{
+    const file = await pickFile("audio/*", true);
+    if(!file) return;
+    const rec = await putBlob(file);
+    const entry = {id:uid(), t:nowISO(), kind:"audio", blob_id:rec.id, mime:rec.type, note:"", tags:[opts.tag||"memory"]};
+    q.progress.memories.push(entry);
+    q.progress.plunder_score += 140;
+    q.progress.xp_this_quest += q.scoring.log_xp;
+    addXP(q.scoring.log_xp, "Memory logged");
+    persistActiveQuest();
+    toast("Voice logged.");
+    closeModal();
+    renderConsole(q);
+  });
+
+  // quote
+  const quote = document.createElement("button");
+  quote.textContent = "QUOTE";
+  quote.addEventListener("click", ()=>{
+    const txt = prompt("Quote of the moment (kid line, funny thing, what we learned):");
+    if(!txt) return;
+    const entry = {id:uid(), t:nowISO(), kind:"quote", text:txt.slice(0,400), tags:[opts.tag||"memory"]};
+    q.progress.memories.push(entry);
+    q.progress.plunder_score += 90;
+    q.progress.xp_this_quest += q.scoring.log_xp;
+    addXP(q.scoring.log_xp, "Memory logged");
+    persistActiveQuest();
+    toast("Quote logged.");
+    closeModal();
+    renderConsole(q);
+  });
+
+  // tags
+  const tag = document.createElement("button");
+  tag.textContent = "TAGS";
+  tag.addEventListener("click", ()=>{
+    const choice = prompt("Type tags, comma-separated:\nwonka-zone, selfie, kindness, discovery, snack, nature, glitch");
+    if(!choice) return;
+    const tags = choice.split(",").map(s=>s.trim()).filter(Boolean).slice(0,12);
+    const entry = {id:uid(), t:nowISO(), kind:"tags", tags};
+    q.progress.memories.push(entry);
+
+    // bonuses
+    if(tags.includes("selfie")){
+      q.progress.plunder_score += 250;
+      q.progress.xp_this_quest += q.scoring.selfie_xp;
+      addXP(q.scoring.selfie_xp, "Selfie bonus");
+    }
+    if(tags.includes("wonka-zone")){
+      q.progress.plunder_score += 180;
+      q.progress.xp_this_quest += q.scoring.wonka_xp;
+      addXP(q.scoring.wonka_xp, "Wonka zone flagged");
+    }
+    q.progress.plunder_score += 60;
+    q.progress.xp_this_quest += q.scoring.log_xp;
+    addXP(q.scoring.log_xp, "Memory logged");
+    persistActiveQuest();
+    toast("Tags logged.");
+    closeModal();
+    renderConsole(q);
+  });
+
+  row1.appendChild(photo);
+  row1.appendChild(voice);
+  row1.appendChild(quote);
+  row1.appendChild(tag);
+  c.appendChild(row1);
+
+  // optional note
+  const note = document.createElement("textarea");
+  note.placeholder = "Optional: 1 sentence about what happened...";
+  note.style.marginTop = "10px";
+  c.appendChild(note);
+
+  const row2 = document.createElement("div");
+  row2.className = "row";
+  row2.style.marginTop = "10px";
+  row2.style.justifyContent = "flex-end";
+
+  const saveNote = document.createElement("button");
+  saveNote.className = "good";
+  saveNote.textContent = "SAVE NOTE";
+  saveNote.addEventListener("click", ()=>{
+    const txt = (note.value||"").trim();
+    if(!txt){ toast("No note entered."); return; }
+    const entry = {id:uid(), t:nowISO(), kind:"note", text:txt.slice(0,700), tags:[opts.tag||"memory"]};
+    q.progress.memories.push(entry);
+    q.progress.plunder_score += 70;
+    q.progress.xp_this_quest += q.scoring.log_xp;
+    addXP(q.scoring.log_xp, "Memory logged");
+    persistActiveQuest();
+    toast("Note logged.");
+    closeModal();
+    renderConsole(q);
+  });
+
+  row2.appendChild(saveNote);
+  c.appendChild(row2);
+
+  mc.appendChild(c);
+  openModal();
+}
+
+/* ---------- File picker helper ---------- */
+function pickFile(accept, capture=false){
+  return new Promise((resolve)=>{
+    const inp = document.createElement("input");
+    inp.type = "file";
+    inp.accept = accept || "*/*";
+    if(capture) inp.capture = "environment";
+    inp.onchange = ()=> resolve(inp.files && inp.files[0] ? inp.files[0] : null);
+    inp.click();
+  });
+}
+
+/* ---------- Persist active quest in state ---------- */
+function persistActiveQuest(){
+  saveState();
+}
+
+/* ---------- Complete quest => pack ---------- */
+function completeQuest(q){
+  q.status = "completed";
+  q.ended_at = nowISO();
+
+  // completion awards
+  const allPrimDone = q.primary.every(t=>t.done);
+  if(allPrimDone){
+    q.progress.plunder_score += 1000;
+    q.progress.xp_this_quest += q.scoring.complete_xp;
+    addXP(q.scoring.complete_xp, "Quest complete");
+  }else{
+    // partial completion
+    q.progress.plunder_score += 300;
+    addXP(150, "Quest ended (partial)");
+  }
+
+  // make pack
+  const pack = {
+    id: uid(),
+    quest_id: q.id,
+    title: q.title,
+    created_at: nowISO(),
+    started_at: q.started_at,
+    ended_at: q.ended_at,
+    inputs: q.inputs,
+    hook: q.hook,
+    stats: {
+      plunder_score: q.progress.plunder_score,
+      xp_this_quest: q.progress.xp_this_quest,
+      primary_done: q.primary.filter(t=>t.done).length,
+      primary_total: q.primary.length,
+      side_done: q.side.filter(t=>t.done).length,
+      side_total: q.side.length,
+      memories: q.progress.memories.length
+    },
+    primary: q.primary,
+    side: q.side,
+    artifacts: q.artifacts,
+    memories: q.progress.memories
+  };
+
+  state.packs.unshift(pack);
+  state.activeQuest = null;
+  saveState();
+  renderPacks();
+  showConsole(false);
+  toast("Adventure Pack created.");
+}
+
+/* ---------- Packs rendering ---------- */
+function renderPacks(){
+  const list = $("packList");
+  list.innerHTML = "";
+
+  if(!state.packs.length){
+    const empty = document.createElement("div");
+    empty.className = "hint";
+    empty.textContent = "No packs yet. Summon a quest and complete it to generate your first Adventure Pack.";
+    list.appendChild(empty);
+    return;
+  }
+
+  state.packs.forEach(pack=>{
+    const item = document.createElement("div");
+    item.className = "packItem";
+
+    const left = document.createElement("div");
+    left.className = "left";
+
+    const b = document.createElement("b");
+    b.textContent = "Adventure Pack";
+
+    const name = document.createElement("p");
+    name.className = "name";
+    name.textContent = pack.title;
+
+    const meta = document.createElement("div");
+    meta.className = "meta";
+    meta.textContent = `${fmtDT(pack.started_at || pack.created_at)} • Score ${pack.stats.plunder_score} • Memories ${pack.stats.memories}`;
+
+    left.appendChild(b);
+    left.appendChild(name);
+    left.appendChild(meta);
+
+    const right = document.createElement("div");
+    right.className = "right";
+
+    const view = document.createElement("button");
+    view.className = "primary";
+    view.textContent = "VIEW";
+    view.addEventListener("click", ()=> viewPack(pack));
+
+    const exp = document.createElement("button");
+    exp.textContent = "EXPORT JSON";
+    exp.addEventListener("click", ()=> exportJSON(pack, `adventure_pack_${slug(pack.title)}.json`));
+
+    const del = document.createElement("button");
+    del.className = "danger";
+    del.textContent = "DELETE";
+    del.addEventListener("click", ()=>{
+      if(!confirm("Delete this pack?")) return;
+      state.packs = state.packs.filter(p=>p.id!==pack.id);
+      saveState();
+      renderPacks();
+      toast("Pack deleted.");
+    });
+
+    right.appendChild(view);
+    right.appendChild(exp);
+    right.appendChild(del);
+
+    item.appendChild(left);
+    item.appendChild(right);
+    list.appendChild(item);
+  });
+}
+
+function viewPack(pack){
+  $("modalTitle").textContent = "Adventure Pack";
+  const mc = $("modalContent");
+  mc.innerHTML = "";
+
+  const card = document.createElement("div");
+  card.className = "artifactCard";
+  card.innerHTML = `
+    <h4>${escapeHtml(pack.title)}</h4>
+    <p class="muted">Started: ${escapeHtml(fmtDT(pack.started_at || pack.created_at))}<br/>
+    Score: ${pack.stats.plunder_score} • XP: ${pack.stats.xp_this_quest} • Memories: ${pack.stats.memories}</p>
+  `;
+  mc.appendChild(card);
+
+  const steps = document.createElement("div");
+  steps.className = "artifactCard";
+  steps.innerHTML = `<h4>Steps & Side Quests</h4>`;
+  const p1 = document.createElement("p");
+  p1.innerHTML = `<b class="muted">Primary</b><br/>` + pack.primary.map(t=>`${t.done ? "✅" : "⬜"} ${escapeHtml(t.text)}`).join("<br/>");
+  const p2 = document.createElement("p");
+  p2.style.marginTop="10px";
+  p2.innerHTML = `<b class="muted">Side</b><br/>` + pack.side.map(t=>`${t.done ? "✅" : "⬜"} ${escapeHtml(t.text)}`).join("<br/>");
+  steps.appendChild(p1);
+  steps.appendChild(p2);
+  mc.appendChild(steps);
+
+  const mem = document.createElement("div");
+  mem.className = "artifactCard";
+  mem.innerHTML = `<h4>Memories</h4>`;
+  const mp = document.createElement("p");
+  if(!pack.memories.length){
+    mp.textContent = "No memories logged for this pack.";
+    mem.appendChild(mp);
+  }else{
+    // render memories (photos/audio as buttons to preview)
+    pack.memories.forEach(m=>{
+      const line = document.createElement("div");
+      line.style.marginBottom="10px";
+      line.style.padding="10px";
+      line.style.border="1px solid rgba(255,255,255,.10)";
+      line.style.borderRadius="14px";
+      line.style.background="rgba(0,0,0,.14)";
+
+      const head = document.createElement("div");
+      head.className = "muted";
+      head.style.fontFamily = "var(--mono)";
+      head.style.fontSize = "12px";
+      head.textContent = `${new Date(m.t).toLocaleString()} • ${m.kind.toUpperCase()}`;
+      line.appendChild(head);
+
+      if(m.kind==="quote" || m.kind==="note"){
+        const t = document.createElement("div");
+        t.style.marginTop="6px";
+        t.style.fontFamily="var(--mono)";
+        t.style.fontSize="13px";
+        t.textContent = m.text;
+        line.appendChild(t);
+      }else if(m.kind==="tags"){
+        const t = document.createElement("div");
+        t.style.marginTop="6px";
+        t.style.fontFamily="var(--mono)";
+        t.style.fontSize="13px";
+        t.textContent = "Tags: " + (m.tags||[]).join(", ");
+        line.appendChild(t);
+      }else if(m.kind==="photo" || m.kind==="audio"){
+        const btn = document.createElement("button");
+        btn.className = "primary";
+        btn.style.marginTop="8px";
+        btn.textContent = m.kind==="photo" ? "VIEW PHOTO" : "PLAY AUDIO";
+        btn.addEventListener("click", async ()=>{
+          const rec = await getBlob(m.blob_id);
+          if(!rec){ toast("Media missing."); return; }
+          if(m.kind==="photo"){
+            const url = URL.createObjectURL(rec.blob);
+            const img = document.createElement("img");
+            img.src = url;
+            img.alt = "Memory photo";
+            img.style.marginTop="10px";
+            img.onload = ()=> setTimeout(()=>URL.revokeObjectURL(url), 1000);
+            line.appendChild(img);
+          }else{
+            const url = URL.createObjectURL(rec.blob);
+            const audio = document.createElement("audio");
+            audio.controls = true;
+            audio.src = url;
+            audio.style.width="100%";
+            audio.style.marginTop="10px";
+            audio.onended = ()=> setTimeout(()=>URL.revokeObjectURL(url), 1000);
+            line.appendChild(audio);
+          }
+        });
+        line.appendChild(btn);
+      }
+
+      mem.appendChild(line);
+    });
+  }
+  mc.appendChild(mem);
+
+  openModal();
+}
+
+/* ---------- Next step (TREK/NEXT) ---------- */
+function trekNext(q){
+  // Advance to next incomplete primary step (like a dungeon room)
+  const idx = q.primary.findIndex(t=>!t.done);
+  if(idx===-1){
+    toast("Primary objectives complete. Finish or do side quests.");
+    return;
+  }
+  q.progress.current_primary_index = idx;
+  toast(`Room ${idx+1}: ${q.primary[idx].text}`);
+  persistActiveQuest();
+  renderConsole(q);
+}
+
+/* ---------- Map button ---------- */
+function openMap(q){
+  // Prefer a map artifact if present; else open external map search
+  const mapArt = q.artifacts.find(a=>a.type==="map");
+  if(mapArt){
+    openArtifacts(q); // shows map inside vault
+    return;
+  }
+  const qstr = encodeURIComponent(q.inputs.where || "near me");
+  window.open(`https://www.google.com/maps/search/?api=1&query=${qstr}`, "_blank");
+}
+
+/* ---------- Summon flow ---------- */
+async function summon(){
+  const inputs = {
+    time: $("fTime").value,
+    weather: $("fWeather").value,
+    vibe: $("fVibe").value,
+    range: $("fRange").value,
+    where: ($("fWhere").value||"").trim(),
+    constraints: ($("fConstraints").value||"").trim(),
+    party: ($("fParty").value||"").trim()
+  };
+
+  const avoid = { avoidThemes: state.packs.slice(0,6).map(p=>p.title.split(" — ")[0]) };
+  // Try AI endpoint first (if configured), else fallback
+  let q = null;
+  try{
+    q = await maybeGenerateQuestAI(inputs, avoid);
+  }catch(e){
+    console.warn(e);
+    q = null;
+  }
+  if(!q){
+    q = generateQuestFromInputs(inputs, avoid);
+  }
+
+  proposedQuest = q;
+  renderReveal(q);
+  showReveal(true);
+}
+
+/* ---------- Accept flow ---------- */
+function accept(){
+  if(!proposedQuest) return;
+  const q = proposedQuest;
+  q.status = "active";
+  q.started_at = nowISO();
+  state.activeQuest = q;
+  proposedQuest = null;
+
+  // award accept XP
+  q.progress.xp_this_quest += q.scoring.accept_xp;
+  q.progress.plunder_score += 100;
+  addXP(q.scoring.accept_xp, "Quest accepted");
+
+  saveState();
+  renderConsole(state.activeQuest);
+  showConsole(true);
+  showReveal(false);
+}
+
+/* ---------- Pass flow ---------- */
+function pass(){
+  if(!proposedQuest) return;
+  // avoid current theme for reroll
+  const theme = proposedQuest.title.split(" — ")[0];
+  const inputs = proposedQuest.inputs;
+  const avoid = { avoidThemes: [theme, ...state.packs.slice(0,6).map(p=>p.title.split(" — ")[0])] };
+  proposedQuest = generateQuestFromInputs(inputs, avoid);
+  renderReveal(proposedQuest);
+  toast("Re-rolled quest.");
+}
+
+/* ---------- Exit flow ---------- */
+function exitQuest(){
+  const q = state.activeQuest;
+  if(!q) return;
+  const choice = prompt("Type one:\nCOMPLETE\nPAUSE\nABANDON", "PAUSE");
+  if(!choice) return;
+  const c = choice.trim().toLowerCase();
+  if(c==="pause"){
+    q.status = "paused";
+    // keep as activeQuest but not showing console (optional)
+    state.activeQuest = q;
+    saveState();
+    showConsole(false);
+    renderPacks();
+    toast("Quest paused (still stored).");
+  }else if(c==="abandon"){
+    if(!confirm("Abandon quest? It will not create a pack.")) return;
+    state.activeQuest = null;
+    saveState();
+    showConsole(false);
+    renderPacks();
+    toast("Quest abandoned.");
+  }else if(c==="complete"){
+    completeQuest(q);
+  }else{
+    toast("Unknown command.");
+  }
+}
+
+/* ---------- Reset ---------- */
+function resetAll(){
+  if(!confirm("Reset all local data (xp, packs, active quest)?")) return;
+  localStorage.removeItem(APP_KEY);
+  state = defaultState();
+  setSkin("sci");
+  proposedQuest = null;
+  saveState();
+  renderPacks();
+  showReveal(false);
+  showConsole(false);
+  toast("Reset complete.");
+}
+
+/* ---------- Helpers ---------- */
+function pill(text){
+  const d=document.createElement("div");
+  d.className="pill";
+  d.textContent=text;
+  return d;
+}
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[m]));
+}
+function slug(s){
+  return String(s).toLowerCase().replace(/[^a-z0-9]+/g,"_").replace(/^_+|_+$/g,"").slice(0,60);
+}
+function exportJSON(obj, filename){
+  const blob = new Blob([JSON.stringify(obj,null,2)], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+  toast("Exported JSON.");
+}
+
+/* Placeholder map/clue images (so the UI looks alive) */
+function makePlaceholderMapDataURL(){
+  // tiny SVG placeholder
+  const svg = `
+  <svg xmlns="http://www.w3.org/2000/svg" width="900" height="520">
+    <defs>
+      <linearGradient id="g" x1="0" x2="1">
+        <stop offset="0" stop-color="rgba(116,214,255,0.35)"/>
+        <stop offset="1" stop-color="rgba(180,140,255,0.35)"/>
+      </linearGradient>
+    </defs>
+    <rect width="100%" height="100%" fill="rgba(0,0,0,0.35)"/>
+    <rect x="18" y="18" width="864" height="484" rx="26" fill="url(#g)" opacity="0.25" stroke="rgba(255,255,255,0.18)"/>
+    <path d="M120 410 C240 260, 380 280, 520 180 S780 160, 820 120" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="10" stroke-linecap="round"/>
+    <circle cx="820" cy="120" r="18" fill="rgba(255,77,109,0.85)"/>
+    <circle cx="120" cy="410" r="18" fill="rgba(88,242,157,0.85)"/>
+    <text x="60" y="90" fill="rgba(255,255,255,0.70)" font-family="monospace" font-size="26">ARTIFACT MAP FRAGMENT</text>
+    <text x="60" y="125" fill="rgba(255,255,255,0.55)" font-family="monospace" font-size="18">Replace with a real screenshot / image later.</text>
+  </svg>`;
+  return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+}
+function makePlaceholderClueDataURL(){
+  const svg = `
+  <svg xmlns="http://www.w3.org/2000/svg" width="900" height="520">
+    <rect width="100%" height="100%" fill="rgba(0,0,0,0.35)"/>
+    <rect x="18" y="18" width="864" height="484" rx="26" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.18)"/>
+    <circle cx="300" cy="260" r="120" fill="rgba(116,214,255,0.18)" stroke="rgba(116,214,255,0.55)" stroke-width="8"/>
+    <rect x="470" y="150" width="320" height="220" rx="22" fill="rgba(180,140,255,0.18)" stroke="rgba(180,140,255,0.55)" stroke-width="8"/>
+    <text x="60" y="90" fill="rgba(255,255,255,0.70)" font-family="monospace" font-size="26">CLUE IMAGE PLACEHOLDER</text>
+    <text x="60" y="125" fill="rgba(255,255,255,0.55)" font-family="monospace" font-size="18">Swap with a real photo clue later.</text>
+  </svg>`;
+  return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+}
+
+/* ---------- Boot ---------- */
+function boot(){
+  initTelegram();
+  setSkin(state.skin || "sci");
+  updateTopChips();
+  renderPacks();
+
+  // If a quest is active, show console
+  if(state.activeQuest && state.activeQuest.status !== "completed"){
+    renderConsole(state.activeQuest);
+    showConsole(true);
+  }else{
+    showConsole(false);
+  }
+
+  // wire buttons
+  $("btnSummon").addEventListener("click", summon);
+  $("btnPass").addEventListener("click", pass);
+  $("btnAccept").addEventListener("click", accept);
+
+  $("btnArtifacts").addEventListener("click", ()=> openArtifacts(state.activeQuest));
+  $("btnLog").addEventListener("click", ()=> openLogModal(state.activeQuest));
+  $("btnNext").addEventListener("click", ()=> trekNext(state.activeQuest));
+  $("btnMap").addEventListener("click", ()=> openMap(state.activeQuest));
+  $("btnExit").addEventListener("click", exitQuest);
+
+  $("btnModalClose").addEventListener("click", closeModal);
+  $("modalBack").addEventListener("click", (e)=>{ if(e.target === $("modalBack")) closeModal(); });
+
+  $("btnReset").addEventListener("click", resetAll);
+  $("btnSkin").addEventListener("click", cycleSkin);
+  $("btnBackToRequest").addEventListener("click", ()=>{
+    showReveal(false);
+    showConsole(false);
+    window.scrollTo({top:0, behavior:"smooth"});
+  });
+
+  // escape closes modal
+  window.addEventListener("keydown", (e)=>{ if(e.key==="Escape") closeModal(); });
+
+  toast("Quest Console online.");
+}
+
+boot();
+</script>
+</body>
+</html>
