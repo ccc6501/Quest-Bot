@@ -2,12 +2,17 @@ name = "quest-handler"
 main = "src/worker.js"
 compatibility_date = "2024-11-01"
 
+# Route under makerapp.cc/api/*
+# Uncomment and set your zone_id + route after first deploy:
+# routes = [{ pattern = "makerapp.cc/api/*", zone_id = "YOUR_ZONE_ID" }]
+
 [[d1_databases]]
 binding = "DB"
 database_name = "questing"
-database_id = "a1b2c3d4-5678-90ab-cdef-1234567890ab"
+# Created by deploy.sh — replaced automatically
+database_id = "PLACEHOLDER"
 
 [vars]
 AI_PROVIDER = "openrouter"
-OPENROUTER_API_KEY = "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"
 OPENROUTER_MODEL = "anthropic/claude-3.5-sonnet"
+# OPENROUTER_API_KEY is set via `wrangler secret put` (see deploy.sh)
